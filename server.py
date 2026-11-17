@@ -472,6 +472,31 @@ ETF_DATASET = {
 ETF_ISSUANCE_BTC = 450.0
 ETF_TH_RED = -250.0
 
+# Live days appended by scripts/etf_sync.mjs (same file the browser loads).
+# Missing/invalid file is fine: the embedded seed above stays authoritative.
+def _load_live_etf_days():
+    path = os.path.join(BASE_DIR, "static", "etf-live.json")
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            payload = json.load(fh)
+    except (OSError, ValueError):
+        return
+    for day, item in (payload.get("days") or {}).items():
+        if not isinstance(item, dict) or item.get("total") is None:
+            continue
+        try:
+            ETF_DATASET[day] = {
+                "total": float(item["total"]),
+                "ibit": None if item.get("ibit") is None else float(item["ibit"]),
+                "fbtc": None if item.get("fbtc") is None else float(item["fbtc"]),
+                "src": item.get("src", "farside"),
+            }
+        except (TypeError, ValueError):
+            continue
+
+
+_load_live_etf_days()
+
 
 def etf_verdict(total, ibit):
     if total > 0:

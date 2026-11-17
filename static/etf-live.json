@@ -1,0 +1,84 @@
+{
+  "updated": "2026-11-17T22:15:48Z",
+  "source": "farside.co.uk/btc (browser session, asus)",
+  "days": {
+    "2026-10-29": {
+      "total": 17.2,
+      "ibit": 12.8,
+      "fbtc": 10.5,
+      "src": "farside"
+    },
+    "2026-10-30": {
+      "total": -643.2,
+      "ibit": -233.7,
+      "fbtc": -201.0,
+      "src": "farside"
+    },
+    "2026-11-02": {
+      "total": -398.6,
+      "ibit": -405.3,
+      "fbtc": 6.7,
+      "src": "farside"
+    },
+    "2026-11-03": {
+      "total": -115.6,
+      "ibit": -95.0,
+      "fbtc": 6.8,
+      "src": "farside"
+    },
+    "2026-11-04": {
+      "total": 74.6,
+      "ibit": -201.2,
+      "fbtc": 236.7,
+      "src": "farside"
+    },
+    "2026-11-05": {
+      "total": -430.2,
+      "ibit": -105.0,
+      "fbtc": -199.9,
+      "src": "farside"
+    },
+    "2026-11-06": {
+      "total": -411.9,
+      "ibit": -403.0,
+      "fbtc": 42.8,
+      "src": "farside"
+    },
+    "2026-11-09": {
+      "total": -201.0,
+      "ibit": -213.2,
+      "fbtc": 0.0,
+      "src": "farside"
+    },
+    "2026-11-10": {
+      "total": -95.0,
+      "ibit": -78.2,
+      "fbtc": -36.8,
+      "src": "farside"
+    },
+    "2026-11-11": {
+      "total": -299.8,
+      "ibit": -269.7,
+      "fbtc": 0.0,
+      "src": "farside"
+    },
+    "2026-11-12": {
+      "total": -284.1,
+      "ibit": -203.8,
+      "fbtc": -32.6,
+      "src": "farside"
+    },
+    "2026-11-13": {
+      "total": -185.4,
+      "ibit": -143.5,
+      "fbtc": -41.9,
+      "src": "farside"
+    },
+    "2026-11-16": {
+      "total": 7.9,
+      "ibit": 76.5,
+      "fbtc": -11.3,
+      "src": "farside"
+    }
+  }
+}

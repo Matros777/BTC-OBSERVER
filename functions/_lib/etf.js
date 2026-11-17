@@ -27,11 +27,11 @@ export function etfVerdict(total, ibit) {
   return "RED";
 }
 
-export function etfSummary(price, limit = 10) {
-  const days = Object.keys(ETF_DATASET).sort();
+export function etfSummary(price, limit = 10, dataset = ETF_DATASET) {
+  const days = Object.keys(dataset || {}).sort();
   const window = days.slice(-limit);
   const rows = window.map((day) => {
-    const item = ETF_DATASET[day];
+    const item = dataset[day];
     const total = Number(item.total);
     const ibit = item.ibit === null || item.ibit === undefined ? null : Number(item.ibit);
     const fbtc = item.fbtc === null || item.fbtc === undefined ? null : Number(item.fbtc);
@@ -107,4 +107,34 @@ export function etfSummary(price, limit = 10) {
     disclaimer: "ETF flows are historical data, not a forecast. Not financial advice.",
     updatedAt: Date.now(),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Live days (2026-11-17+) are published by the daily sync into static/etf-live.json
+// and merged on top of the embedded seed, so the 2-week window slides by itself.
+// ---------------------------------------------------------------------------
+
+export function mergeEtfDatasets(liveDays) {
+  const clean = {};
+  const src = liveDays && typeof liveDays === "object" ? liveDays : {};
+  for (const [day, item] of Object.entries(src)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !item) continue;
+    const total = Number(item.total);
+    if (!Number.isFinite(total)) continue;
+    const toNum = (v) => (v === null || v === undefined || v === "" || Number.isNaN(Number(v)) ? null : Number(v));
+    clean[day] = { total, ibit: toNum(item.ibit), fbtc: toNum(item.fbtc), src: item.src || "farside" };
+  }
+  return { ...ETF_DATASET, ...clean };
+}
+
+export async function loadEtfDataset() {
+  const stamp = new Date().toISOString().slice(0, 13); // hourly cache-buster
+  try {
+    const res = await fetch(`/etf-live.json?v=${stamp}`, { cache: "no-store" });
+    if (!res.ok) return ETF_DATASET;
+    const payload = await res.json();
+    return mergeEtfDatasets(payload && payload.days);
+  } catch {
+    return ETF_DATASET;
+  }
 }

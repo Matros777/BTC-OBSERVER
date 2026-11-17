@@ -1,23 +1,54 @@
 /* BTC // OBSERVER — frontend */
 import { analyze, analyzeLongTerm } from "./analysis.js";
-import { etfSummary } from "./etf.js";
+import { etfSummary, loadEtfDataset } from "./etf.js";
 
 (() => {
   "use strict";
 
-  const C = {
-    bg: "#050507",
-    grid: "rgba(255,255,255,0.045)",
-    gridStrong: "rgba(255,255,255,0.08)",
-    text: "#e9e9f2",
-    muted: "#76768a",
-    dim: "#4a4a5a",
-    neon: "#00ffb3",
-    pink: "#ff2d6f",
-    cyan: "#00e5ff",
-    purple: "#b26bff",
-    yellow: "#ffe066",
-    orange: "#ff9f43",
+  const PALETTES = {
+    dark: {
+      bg: "#050507",
+      grid: "rgba(255,255,255,0.045)",
+      gridStrong: "rgba(255,255,255,0.08)",
+      line: "rgba(255,255,255,0.08)",
+      lineStrong: "rgba(255,255,255,0.22)",
+      text: "#e9e9f2",
+      muted: "#76768a",
+      dim: "#4a4a5a",
+      neon: "#00ffb3",
+      pink: "#ff2d6f",
+      cyan: "#00e5ff",
+      purple: "#b26bff",
+      yellow: "#ffe066",
+      orange: "#ff9f43",
+    },
+    light: {
+      bg: "#f4f6fb",
+      grid: "rgba(15,23,42,0.07)",
+      gridStrong: "rgba(15,23,42,0.12)",
+      line: "rgba(15,23,42,0.10)",
+      lineStrong: "rgba(15,23,42,0.24)",
+      text: "#0f172a",
+      muted: "#556176",
+      dim: "#8792a8",
+      neon: "#00986e",
+      pink: "#d81b53",
+      cyan: "#0079a3",
+      purple: "#6b37cf",
+      yellow: "#9a7400",
+      orange: "#bd6400",
+    },
+  };
+
+  const getTheme = () => (document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark");
+  let C = PALETTES[getTheme()];
+
+  // hex -> rgba, so translucent chart fills follow the active palette
+  const alpha = (hex, a) => {
+    const h = String(hex).replace("#", "");
+    const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+    const n = parseInt(full, 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
   };
 
   const $ = (id) => document.getElementById(id);
@@ -161,9 +192,9 @@ import { etfSummary } from "./etf.js";
       ctx.lineTo(xOf(i), yOf(v));
     }
     ctx.closePath();
-    ctx.fillStyle = "rgba(0, 229, 255, 0.06)";
+    ctx.fillStyle = alpha(C.cyan, 0.08);
     ctx.fill();
-    ctx.strokeStyle = "rgba(0, 229, 255, 0.25)";
+    ctx.strokeStyle = alpha(C.cyan, 0.30);
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -226,9 +257,9 @@ import { etfSummary } from "./etf.js";
         ctx.lineTo(x, y);
       }
       ctx.closePath();
-      ctx.fillStyle = "rgba(0, 255, 179, 0.06)";
+      ctx.fillStyle = alpha(C.neon, 0.07);
       ctx.fill();
-      ctx.strokeStyle = "rgba(0, 255, 179, 0.18)";
+      ctx.strokeStyle = alpha(C.neon, 0.22);
       ctx.setLineDash([2, 4]);
       ctx.stroke();
       ctx.setLineDash([]);
@@ -250,7 +281,7 @@ import { etfSummary } from "./etf.js";
 
       // NOW divider
       const xNow = xOf(baseIndex);
-      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.strokeStyle = C.lineStrong;
       ctx.setLineDash([2, 4]);
       ctx.beginPath(); ctx.moveTo(xNow, padT); ctx.lineTo(xNow, padT + plotH); ctx.stroke();
       ctx.setLineDash([]);
@@ -262,7 +293,7 @@ import { etfSummary } from "./etf.js";
     // last price line
     const last = candles[candles.length - 1];
     const yLast = yOf(last.c);
-    ctx.strokeStyle = "rgba(0,255,179,0.45)";
+    ctx.strokeStyle = alpha(C.neon, 0.45);
     ctx.setLineDash([3, 4]);
     ctx.beginPath(); ctx.moveTo(padL, yLast); ctx.lineTo(w - padR, yLast); ctx.stroke();
     ctx.setLineDash([]);
@@ -274,7 +305,7 @@ import { etfSummary } from "./etf.js";
     if (state.hover && state.hover.chart === "price") {
       const i = Math.max(0, Math.min(candles.length - 1, state.hover.index));
       const x = xOf(i);
-      ctx.strokeStyle = "rgba(255,255,255,0.25)";
+      ctx.strokeStyle = C.lineStrong;
       ctx.setLineDash([2, 3]);
       ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH); ctx.stroke();
       ctx.setLineDash([]);
@@ -296,7 +327,7 @@ import { etfSummary } from "./etf.js";
     ctx.lineWidth = 1;
     [30, 50, 70].forEach((level) => {
       const y = yOf(level);
-      ctx.strokeStyle = level === 50 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.05)";
+      ctx.strokeStyle = level === 50 ? C.gridStrong : C.grid;
       ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
       ctx.fillStyle = C.dim;
       ctx.font = "8px " + getComputedStyle(document.body).fontFamily;
@@ -365,7 +396,7 @@ import { etfSummary } from "./etf.js";
     const yOf = (v) => padT + (1 - (v - min) / (max - min || 1)) * plotH;
     const y0 = yOf(0);
 
-    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.strokeStyle = C.line;
     ctx.beginPath(); ctx.moveTo(padL, y0); ctx.lineTo(w - padR, y0); ctx.stroke();
 
     const bw = Math.max(1, (plotW / Math.max(1, hist.length)) * 0.55);
@@ -374,7 +405,7 @@ import { etfSummary } from "./etf.js";
       if (v === null) continue;
       const x = xOf(i);
       const y = yOf(v);
-      ctx.fillStyle = v >= 0 ? "rgba(0,255,179,0.55)" : "rgba(255,45,111,0.55)";
+      ctx.fillStyle = v >= 0 ? alpha(C.neon, 0.55) : alpha(C.pink, 0.55);
       ctx.fillRect(x - bw / 2, Math.min(y, y0), bw, Math.max(1, Math.abs(y - y0)));
     }
 
@@ -415,10 +446,10 @@ import { etfSummary } from "./etf.js";
       const x = padL + (i / Math.max(1, vols.length - 1)) * plotW;
       const bh = (vols[i] / max) * plotH;
       const up = k.c >= k.o;
-      ctx.fillStyle = up ? "rgba(0,255,179,0.38)" : "rgba(255,45,111,0.38)";
+      ctx.fillStyle = up ? alpha(C.neon, 0.42) : alpha(C.pink, 0.42);
       ctx.fillRect(x - bw / 2, padT + plotH - bh, bw, bh);
     }
-    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.strokeStyle = C.line;
     ctx.beginPath(); ctx.moveTo(padL, padT + plotH); ctx.lineTo(w - padR, padT + plotH); ctx.stroke();
   }
 
@@ -579,7 +610,7 @@ import { etfSummary } from "./etf.js";
     const maxAbs = Math.max(...rows.map((r) => Math.abs(r.total)), 1);
     const zero = padT + plotH / 2;
 
-    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.strokeStyle = C.line;
     ctx.beginPath();
     ctx.moveTo(padL, zero);
     ctx.lineTo(w - padR, zero);
@@ -590,7 +621,7 @@ import { etfSummary } from "./etf.js";
       const x = padL + (i + 0.5) * (plotW / rows.length);
       const bh = (Math.abs(r.total) / maxAbs) * (plotH / 2 - 2);
       const y = r.total >= 0 ? zero - bh : zero;
-      ctx.fillStyle = r.total >= 0 ? "rgba(0,255,179,0.65)" : "rgba(255,45,111,0.65)";
+      ctx.fillStyle = r.total >= 0 ? alpha(C.neon, 0.65) : alpha(C.pink, 0.65);
       ctx.fillRect(x - bw / 2, y, bw, Math.max(1, bh));
       if (i % 2 === 0) {
         ctx.fillStyle = C.dim;
@@ -668,14 +699,15 @@ import { etfSummary } from "./etf.js";
   async function fetchData() {
     setStatus("SYNC", true);
     try {
-      const [k1h, k1d, ticker] = await Promise.all([
+      const [k1h, k1d, ticker, etfDataset] = await Promise.all([
         fetchJson("/api/klines?interval=1h&limit=500"),
         fetchJson("/api/klines?interval=1d&limit=250"),
         fetchJson("/api/ticker"),
+        loadEtfDataset().catch(() => null),
       ]);
       if (!k1h.klines || !k1h.klines.length) throw new Error(k1h.error || "no klines");
       const data = analyze(k1h.klines, ticker);
-      data.etf = etfSummary(data.price);
+      data.etf = etfSummary(data.price, 10, etfDataset || undefined);
       try {
         data.longTerm = analyzeLongTerm(k1d.klines);
       } catch {
@@ -832,8 +864,41 @@ import { etfSummary } from "./etf.js";
     }, 150);
   });
 
+  function applyTheme(theme, persist) {
+    const next = theme === "light" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    if (persist) {
+      try { localStorage.setItem("btc-observer-theme", next); } catch (e) { /* private mode */ }
+    }
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", next === "light" ? "#f4f6fb" : "#050507");
+    const btn = $("themeToggle");
+    if (btn) {
+      const icon = btn.querySelector(".theme-toggle-icon");
+      const label = btn.querySelector(".theme-toggle-label");
+      if (icon) icon.textContent = next === "light" ? "☾" : "☀";
+      if (label) label.textContent = next === "light" ? "DARK" : "LIGHT";
+      btn.setAttribute("aria-pressed", next === "light" ? "true" : "false");
+      btn.title = next === "light" ? "Switch to dark theme" : "Switch to light theme";
+    }
+    C = PALETTES[next];
+    if (state.data) render(state.data);
+  }
+
+  function initTheme() {
+    const btn = $("themeToggle");
+    applyTheme(getTheme(), false);
+    if (btn) {
+      btn.addEventListener("click", () => applyTheme(getTheme() === "light" ? "dark" : "light", true));
+    }
+    window.addEventListener("storage", (ev) => {
+      if (ev.key === "btc-observer-theme") applyTheme(ev.newValue, false);
+    });
+  }
+
   pulseFavicon();
   attachTooltip();
+  initTheme();
   tickClock();
   setInterval(tickClock, 1000);
   fetchData();

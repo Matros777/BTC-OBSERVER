@@ -5,10 +5,12 @@
   "type": "module",
   "description": "BTC Observer — local and Cloudflare Pages dashboard with Binance market data, technical indicators, BTC ETF flows and a cosmic long/short signal.",
   "scripts": {
-    "build": "echo \"static site\"",
+    "build": "node scripts/build-etf.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "pages:deploy": "wrangler pages deploy static"
+    "pages:deploy": "wrangler pages deploy static",
+    "etf:sync": "node scripts/etf_sync.mjs",
+    "etf:sync:dry": "node scripts/etf_sync.mjs --dry-run"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

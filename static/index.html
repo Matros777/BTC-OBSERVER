@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="dark light">
   <title>BTC Observer — Bitcoin ETF Flows, Technical Indicators &amp; Long/Short Signal</title>
   <meta name="description" content="Live BTC/USDT intelligence: 2-week spot Bitcoin ETF flows, 16+ technical indicators, 24h probabilistic forecast and a long/short signal in one cosmic dashboard.">
   <meta name="keywords" content="Bitcoin, BTC, BTCUSDT, Bitcoin ETF, ETF flows, IBIT, FBTC, technical analysis, RSI, MACD, Bollinger Bands, crypto dashboard, BTC forecast, long short signal, market data">
@@ -81,6 +81,20 @@
   }
   </script>
   <link rel="stylesheet" href="/style.css">
+  <script>
+    // Apply the saved theme before first paint (no flash of the wrong palette).
+    (function () {
+      try {
+        var saved = localStorage.getItem("btc-observer-theme");
+        if (saved !== "light" && saved !== "dark") saved = "dark";
+        document.documentElement.setAttribute("data-theme", saved);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", saved === "light" ? "#f4f6fb" : "#050507");
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    })();
+  </script>
 </head>
 <body>
   <div class="bg-grid"></div>
@@ -93,6 +107,10 @@
       <span class="brand-sub">SPOT · LIVE</span>
     </div>
     <div class="top-right">
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch color theme" title="Dark / light theme">
+        <span class="theme-toggle-icon" aria-hidden="true">☀</span>
+        <span class="theme-toggle-label">LIGHT</span>
+      </button>
       <span id="status" class="status"><span class="dot"></span><span id="statusText">SYNC</span></span>
       <span id="clock" class="clock">--:--:--</span>
     </div>

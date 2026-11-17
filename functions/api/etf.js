@@ -1,5 +1,6 @@
 import { getTicker } from "../_lib/binance.js";
 import { etfSummary } from "../_lib/etf.js";
+import { getEtfDataset } from "../_lib/etf-live.js";
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), {
@@ -11,11 +12,14 @@ const json = (obj, status = 200) =>
     },
   });
 
-export async function onRequestGet() {
+export async function onRequestGet({ request, env }) {
   try {
-    const ticker = await getTicker();
+    const [ticker, dataset] = await Promise.all([
+      getTicker(),
+      getEtfDataset(env, request),
+    ]);
     const price = Number(ticker.lastPrice || 0);
-    return json(etfSummary(price));
+    return json(etfSummary(price, 10, dataset));
   } catch (err) {
     return json({ error: String(err && err.message ? err.message : err) }, 502);
   }
