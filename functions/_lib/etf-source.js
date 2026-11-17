@@ -11,9 +11,18 @@
 const MCP_URL = "https://mcp.cryptoetf.today/api/mcp";
 const TOOL = "get_fund_flows";
 const TTL = 6 * 3600; // flows are published once per business day
-const CACHE_KEY = "https://btc-observer-cache.local/etf-upstream-v2";
+const CACHE_KEY = "https://btc-observer-cache.local/etf-upstream-v3";
 
 const asNum = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+
+// Flows lag one business day. While the newest day is still missing, poll often
+// to pick it up shortly after publication; otherwise keep the 6h cache.
+function cacheTtl(days) {
+  const newest = Object.keys(days).sort().pop();
+  if (!newest) return 1800;
+  const lagDays = (Date.now() - Date.parse(newest + "T00:00:00Z")) / 86400000;
+  return lagDays > 1.6 ? 1800 : TTL;
+}
 
 function mapDays(inner) {
   const days = {};
@@ -72,10 +81,11 @@ export async function fetchUpstreamDays() {
 
   const payload = { updated: null, days };
   if (hasCache) {
+    const ttl = cacheTtl(days);
     await caches.default.put(
       cacheKey,
       new Response(JSON.stringify(payload), {
-        headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${TTL}` },
+        headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${ttl}` },
       })
     );
   }
