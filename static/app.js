@@ -646,7 +646,7 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
     $("high").textContent = fmtMoney(t.high24h, 0);
     $("low").textContent = fmtMoney(t.low24h, 0);
     $("volume").textContent = fmtCompact(t.volume24h) + " BTC";
-    $("trades").textContent = fmtCompact(t.trades24h);
+    $("trades").textContent = t.trades24h ? fmtCompact(t.trades24h) : "--";
 
     const comp = data.composite || {};
     const score = Number(comp.score || 0);
