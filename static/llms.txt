@@ -1,0 +1,34 @@
+# BTC Observer
+
+> BTC Observer is a live Bitcoin market-intelligence dashboard: spot BTC/USDT price, 2-week spot Bitcoin ETF flows, 16+ technical indicators, a 24-hour probabilistic forecast and a compact long/short signal.
+
+## What it includes
+
+- Live BTC/USDT price, 24h change, high, low, volume and trades
+- 2-week spot Bitcoin ETF net flows from farside, with IBIT/FBTC breakdown
+- Technical indicators: EMA 20/50/200, RSI 14, MACD, Bollinger Bands, ATR, Stochastic, ADX/DI, OBV, VWAP, CCI, Williams %R, MFI, ROC, Ichimoku, Fibonacci, Pivot Points
+- 24-hour probabilistic GBM forecast with p10/p90 range
+- Long/Short composite signal combining technicals and ETF flows
+- One-page cosmic dark UI with a circular long/short gauge
+
+## Data sources
+
+- Market data: MEXC (Binance-compatible) with Binance fallback
+- ETF flows: farside.co.uk, embedded 2-week dataset
+- Forecast: probabilistic model; not financial advice
+
+## API
+
+- GET /api/market
+- GET /api/etf
+- GET /api/klines?interval=1h&limit=500
+- GET /api/ticker
+
+## Links
+
+- Home: https://btc-observer.ivanbenks7-e96.workers.dev/
+- Sitemap: https://btc-observer.ivanbenks7-e96.workers.dev/sitemap.xml
+
+## Disclaimer
+
+Not financial advice. Forecasts are probabilistic and can be wrong.

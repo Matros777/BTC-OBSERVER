@@ -61,6 +61,17 @@ sudo ufw allow from 192.168.216.0/24 to any port 8787 proto tcp
 - `GET /api/etf` — 2-недельный ETF-срез
 - `GET /api/ticker` — 24h тикер Binance
 
+## SEO / social / AI
+
+- Title, description, keywords, canonical, robots
+- Open Graph + Twitter `summary_large_image`
+- OG image: `/og-image.png` (1200×630)
+- JSON-LD: `WebSite`, `WebApplication`, `Dataset`
+- `/robots.txt` с разрешением AI-ботам (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, CCBot)
+- `/sitemap.xml`
+- `/llms.txt` для AI-поисковиков
+- `/manifest.webmanifest` и `/apple-touch-icon.png`
+
 ## Cloudflare Workers
 
 Репозиторий: `https://github.com/Matros777/BTC-OBSERVER`
