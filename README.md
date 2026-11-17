@@ -84,9 +84,13 @@ npx wrangler pages deploy static
 - Framework preset: **None**
 - Build command: `npm run build`
 - Build output directory: `static`
-- **Deploy command:** `npx wrangler pages deploy static` **или оставить пустым**
+- **Deploy command:** `npm run deploy` (рекомендуется), `npx wrangler pages deploy static`, **или оставить пустым**
 
-> **Важно:** не используй `npx wrangler deploy`. Это команда для Workers, и на Pages она падает с ошибкой `Missing entry-point to Worker script or to assets directory`. В настройках Pages: **Settings → Build & deployments → Deploy command** — укажи `npx wrangler pages deploy static` или очисти поле.
+> **Важно:** не используй `npx wrangler deploy` — это Workers, на Pages он падает с `Missing entry-point`.
+>
+> Не используй и просто `wrangler pages deploy` — Cloudflare выдаст `wrangler: not found`, потому что `wrangler` установлен локально в `node_modules/.bin`. Нужен `npm run deploy` или `npx wrangler pages deploy static`.
+>
+> В настройках Pages: **Settings → Build & deployments → Deploy command**.
 
 Если Cloudflare не сможет достучаться до Binance, API вернёт 502 — тогда нужен прокси или свой сервер.
 
