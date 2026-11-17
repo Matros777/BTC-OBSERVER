@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>BTC // OBSERVER</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="scanlines"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-text">BTC<span class="slash">//</span>OBSERVER</span>
+      <span class="brand-sub">BINANCE · SPOT</span>
+    </div>
+    <div class="top-right">
+      <span id="status" class="status"><span class="dot"></span><span id="statusText">SYNC</span></span>
+      <span id="clock" class="clock">--:--:--</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div class="hero-left">
+        <div class="eyebrow">BTC / USDT · 1H · LIVE</div>
+        <div class="price-row">
+          <h1 id="price" class="price">$--</h1>
+          <span id="change" class="change neutral">--%</span>
+        </div>
+        <div class="hero-stats">
+          <div><span class="k">24H HIGH</span><span id="high" class="v">--</span></div>
+          <div><span class="k">24H LOW</span><span id="low" class="v">--</span></div>
+          <div><span class="k">24H VOL</span><span id="volume" class="v">--</span></div>
+          <div><span class="k">TRADES</span><span id="trades" class="v">--</span></div>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="gauge-label">COMPOSITE SIGNAL</div>
+        <div class="gauge">
+          <div class="gauge-track"><div id="gaugeFill" class="gauge-fill"></div></div>
+          <div id="gaugeScore" class="gauge-score">0</div>
+        </div>
+        <div id="gaugeLabel" class="gauge-text neutral">NEUTRAL</div>
+        <div class="gauge-meta">CONFIDENCE <span id="gaugeConf">--%</span></div>
+      </div>
+    </section>
+
+    <section class="cosmic-grid">
+      <div class="panel cosmic-panel">
+        <div class="panel-head">
+          <span class="panel-title">SIGNAL LONG / SHORT</span>
+          <span class="panel-tag">TECH + ETF · 2W</span>
+        </div>
+        <div class="cosmic-stage">
+          <svg id="cosmicSvg" viewBox="0 0 360 360" aria-label="Cosmic signal">
+            <defs>
+              <linearGradient id="cosmicGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00ffb3"/>
+                <stop offset="55%" stop-color="#00e5ff"/>
+                <stop offset="100%" stop-color="#b26bff"/>
+              </linearGradient>
+              <linearGradient id="cosmicRed" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ff2d6f"/>
+                <stop offset="55%" stop-color="#ff9f43"/>
+                <stop offset="100%" stop-color="#b26bff"/>
+              </linearGradient>
+              <linearGradient id="cosmicYellow" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffe066"/>
+                <stop offset="100%" stop-color="#00ffb3"/>
+              </linearGradient>
+              <filter id="cosmicGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="4" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <circle class="cosmic-orbit orbit-a" cx="180" cy="180" r="156"/>
+            <circle class="cosmic-orbit orbit-b" cx="180" cy="180" r="144"/>
+            <circle class="cosmic-track" cx="180" cy="180" r="128"/>
+            <circle id="cosmicLongArc" class="cosmic-arc" cx="180" cy="180" r="128" filter="url(#cosmicGlow)"/>
+            <circle class="cosmic-track cosmic-track-inner" cx="180" cy="180" r="100"/>
+            <circle id="cosmicShortArc" class="cosmic-arc cosmic-arc-inner" cx="180" cy="180" r="100" filter="url(#cosmicGlow)"/>
+            <circle class="cosmic-core-ring" cx="180" cy="180" r="76"/>
+            <circle class="cosmic-core" cx="180" cy="180" r="68"/>
+            <g class="cosmic-stars">
+              <circle cx="52" cy="70" r="1.4"/><circle cx="300" cy="92" r="1.1"/>
+              <circle cx="72" cy="286" r="1.2"/><circle cx="286" cy="300" r="1.5"/>
+              <circle cx="40" cy="180" r="1"/><circle cx="320" cy="190" r="1"/>
+            </g>
+          </svg>
+          <div class="cosmic-center">
+            <div class="cosmic-eyebrow">OVERALL SIGNAL</div>
+            <div id="cosmicVerdict" class="cosmic-verdict neutral">--</div>
+            <div id="cosmicConf" class="cosmic-conf">--% confidence</div>
+            <div class="cosmic-split">
+              <div><span>LONG 1-3M</span><b id="longScore">--</b></div>
+              <div><span>SHORT 24H</span><b id="shortScore">--</b></div>
+            </div>
+          </div>
+        </div>
+        <div class="cosmic-legend">
+          <span><i class="sw sw-cyan"></i>TECH</span>
+          <span><i class="sw sw-pink"></i>ETF 2W</span>
+          <span><i class="sw sw-neon"></i>COMPOSITE</span>
+        </div>
+      </div>
+
+      <div class="panel etf-panel">
+        <div class="panel-head">
+          <span class="panel-title">BTC ETF FLOWS · 2W</span>
+          <span class="panel-tag">FARSIDE · $M</span>
+        </div>
+        <div class="etf-top">
+          <div>
+            <div class="etf-label">NET FLOW 2W</div>
+            <div id="etfNet" class="etf-net">--</div>
+          </div>
+          <div id="etfVerdict" class="etf-verdict">--</div>
+        </div>
+        <div class="etf-stats">
+          <div><span>INFLOW</span><b id="etfIn">--</b></div>
+          <div><span>OUTFLOW</span><b id="etfOut">--</b></div>
+          <div><span>GREEN / RED</span><b id="etfDaysCount">--</b></div>
+          <div><span>IBIT NET</span><b id="etfIbit">--</b></div>
+          <div><span>FBTC NET</span><b id="etfFbtc">--</b></div>
+          <div><span>WoW</span><b id="etfWow">--</b></div>
+        </div>
+        <div class="etf-meta">
+          <span>AVG/DAY <b id="etfAvg">--</b></span>
+          <span>PRESSURE <b id="etfPressure">--</b></span>
+          <span>LAST <b id="etfLast">--</b></span>
+        </div>
+        <div class="etf-chart-wrap"><canvas id="etfChart"></canvas></div>
+        <div id="etfDays" class="etf-days"></div>
+      </div>
+    </section>
+
+    <section class="grid-main">
+      <div class="panel chart-panel">
+        <div class="panel-head">
+          <span class="panel-title">PRICE ACTION</span>
+          <span class="panel-tag">EMA 20 / 50 / 200 · BB 20,2</span>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="priceChart"></canvas>
+          <div id="tooltip" class="tooltip hidden"></div>
+        </div>
+        <div class="legend">
+          <span><i class="sw sw-cyan"></i>EMA20</span>
+          <span><i class="sw sw-pink"></i>EMA50</span>
+          <span><i class="sw sw-yellow"></i>EMA200</span>
+          <span><i class="sw sw-band"></i>BB</span>
+          <span><i class="sw sw-forecast"></i>24H FORECAST</span>
+        </div>
+      </div>
+
+      <aside class="panel forecast-panel">
+        <div class="panel-head">
+          <span class="panel-title">24H FORECAST</span>
+          <span class="panel-tag">MONTE CARLO</span>
+        </div>
+        <div class="forecast-main">
+          <div class="forecast-label">MEDIAN TARGET</div>
+          <div id="forecastMedian" class="forecast-price">$--</div>
+          <div id="forecastChange" class="forecast-change neutral">--%</div>
+        </div>
+        <div class="forecast-range">
+          <div class="range-row"><span>P10</span><b id="forecastLow">$--</b></div>
+          <div class="range-bar"><div id="rangeFill" class="range-fill"></div></div>
+          <div class="range-row"><span>P90</span><b id="forecastHigh">$--</b></div>
+        </div>
+        <div class="forecast-grid">
+          <div><span class="k">PROB. UP</span><span id="probUp" class="v">--%</span></div>
+          <div><span class="k">CONFIDENCE</span><span id="forecastConf" class="v">--%</span></div>
+          <div><span class="k">VOLATILITY</span><span id="volatility" class="v">--%</span></div>
+          <div><span class="k">MODEL</span><span class="v small">GBM · 2000</span></div>
+        </div>
+        <div class="disclaimer">Probabilistic output. Not financial advice.</div>
+      </aside>
+    </section>
+
+    <section class="grid-sub">
+      <div class="panel mini-panel">
+        <div class="panel-head"><span class="panel-title">RSI 14</span><span id="rsiTag" class="panel-tag">--</span></div>
+        <div class="canvas-wrap small"><canvas id="rsiChart"></canvas></div>
+      </div>
+      <div class="panel mini-panel">
+        <div class="panel-head"><span class="panel-title">MACD 12/26/9</span><span id="macdTag" class="panel-tag">--</span></div>
+        <div class="canvas-wrap small"><canvas id="macdChart"></canvas></div>
+      </div>
+      <div class="panel mini-panel">
+        <div class="panel-head"><span class="panel-title">VOLUME</span><span id="volumeTag" class="panel-tag">--</span></div>
+        <div class="canvas-wrap small"><canvas id="volumeChart"></canvas></div>
+      </div>
+    </section>
+
+    <section class="panel indicators-panel">
+      <div class="panel-head">
+        <span class="panel-title">TECHNICAL MATRIX</span>
+        <span class="panel-tag" id="matrixCount">-- SIGNALS</span>
+      </div>
+      <div id="signalGrid" class="signal-grid"></div>
+    </section>
+
+    <section class="grid-levels">
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">KEY LEVELS</span><span class="panel-tag">FIB · PIVOT</span></div>
+        <div id="levels" class="levels"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">SWING MAP</span><span class="panel-tag">SUPPORT / RESISTANCE</span></div>
+        <div id="swings" class="levels"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>BTC // OBSERVER</span>
+    <span>DATA: BINANCE PUBLIC API · 1H CANDLES</span>
+    <span id="updated">UPDATED --</span>
+  </footer>
+
+  <div id="error" class="error hidden"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>
