@@ -156,7 +156,7 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
     // grid
     ctx.strokeStyle = C.grid;
     ctx.lineWidth = 1;
-    ctx.font = "9px " + getComputedStyle(document.body).fontFamily;
+    ctx.font = "10px " + getComputedStyle(document.body).fontFamily;
     ctx.fillStyle = C.dim;
     for (let i = 0; i <= 4; i++) {
       const y = padT + (plotH * i) / 4;
@@ -330,7 +330,7 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
       ctx.strokeStyle = level === 50 ? C.gridStrong : C.grid;
       ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
       ctx.fillStyle = C.dim;
-      ctx.font = "8px " + getComputedStyle(document.body).fontFamily;
+      ctx.font = "9px " + getComputedStyle(document.body).fontFamily;
       ctx.textAlign = "left";
       ctx.fillText(String(level), padL + 2, y - 2);
     });
@@ -625,7 +625,7 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
       ctx.fillRect(x - bw / 2, y, bw, Math.max(1, bh));
       if (i % 2 === 0) {
         ctx.fillStyle = C.dim;
-        ctx.font = "7px " + getComputedStyle(document.body).fontFamily;
+        ctx.font = "8px " + getComputedStyle(document.body).fontFamily;
         ctx.textAlign = "center";
         ctx.fillText(shortDate(r.date), x, h - 4);
       }
