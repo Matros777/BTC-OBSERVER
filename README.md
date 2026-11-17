@@ -84,6 +84,9 @@ npx wrangler pages deploy static
 - Framework preset: **None**
 - Build command: `npm run build`
 - Build output directory: `static`
+- **Deploy command:** `npx wrangler pages deploy static` **или оставить пустым**
+
+> **Важно:** не используй `npx wrangler deploy`. Это команда для Workers, и на Pages она падает с ошибкой `Missing entry-point to Worker script or to assets directory`. В настройках Pages: **Settings → Build & deployments → Deploy command** — укажи `npx wrangler pages deploy static` или очисти поле.
 
 Если Cloudflare не сможет достучаться до Binance, API вернёт 502 — тогда нужен прокси или свой сервер.
 
