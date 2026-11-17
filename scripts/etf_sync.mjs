@@ -31,6 +31,7 @@ const REPO = process.env.REPO || "Matros777/BTC-OBSERVER";
 const BRANCH = process.env.BRANCH || "main";
 const FILE = "static/etf-live.json";
 const CDP_URL = process.env.CDP_URL || "http://127.0.0.1:9222";
+const CDP_PORT = Number(new URL(CDP_URL).port || 9222);
 const PLAYWRIGHT_DIR = process.env.PLAYWRIGHT_DIR || "/tmp/cf-inspect";
 const CHROME_PROFILE = process.env.CHROME_PROFILE || path.join(os.homedir(), ".config/chrome-btc-profile");
 const FARSIDE = "https://farside.co.uk/btc/";
@@ -107,7 +108,7 @@ async function ensureChrome() {
   log("Chrome CDP is down, starting it");
   const child = spawn("google-chrome", [
     `--user-data-dir=${CHROME_PROFILE}`,
-    "--remote-debugging-port=9222",
+    `--remote-debugging-port=${CDP_PORT}`,
     "--remote-allow-origins=*",
     "--no-first-run",
     "--no-default-browser-check",
@@ -128,13 +129,26 @@ async function scrape() {
   const browser = await chromium.connectOverCDP(CDP_URL);
   const ctx = browser.contexts()[0] || (await browser.newContext());
   const page = await ctx.newPage();
+  const readRows = () =>
+    page.$$eval("table tr", (trs) =>
+      trs.map((tr) => [...tr.querySelectorAll("th,td")].map((td) => td.textContent.trim())));
+
   try {
     await page.goto(FARSIDE, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await page.waitForSelector("table tr", { timeout: 30000 });
-    // the challenge page has no table rows with a month name; give JS a moment
-    await page.waitForTimeout(3000);
-    const rows = await page.$$eval("table tr", (trs) =>
-      trs.map((tr) => [...tr.querySelectorAll("th,td")].map((td) => td.textContent.trim())));
+    // A Cloudflare interstitial has no flow table. Poll: a real browser usually
+    // clears it in a few seconds, sometimes after one reload.
+    let rows = [];
+    for (let attempt = 0; attempt < 3; attempt++) {
+      for (let wait = 0; wait < 10; wait++) {
+        rows = await readRows().catch(() => []);
+        if (rowsToDays(rows) && Object.keys(rowsToDays(rows)).length) break;
+        await page.waitForTimeout(1500);
+      }
+      if (Object.keys(rowsToDays(rows) || {}).length) break;
+      log(`challenge or empty table (attempt ${attempt + 1}), reloading`);
+      await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => {});
+      await page.waitForTimeout(4000);
+    }
     const days = rowsToDays(rows);
     if (!Object.keys(days).length) throw new Error("no flow rows parsed (challenge page?)");
     return days;
