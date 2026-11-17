@@ -1,0 +1,42 @@
+name: ETF sync
+
+on:
+  schedule:
+    # farside publishes the previous US session around 22:00-23:30 UTC
+    - cron: "40 23 * * 1-6"
+    - cron: "40 1 * * 2-6"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: etf-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Fetch ETF flows
+        run: node scripts/etf_sync_ci.mjs
+
+      - name: Commit new days
+        run: |
+          if git diff --quiet -- static/etf-live.json; then
+            echo "No ETF changes."
+            exit 0
+          fi
+          git config user.name "btc-observer-bot"
+          git config user.email "btc-observer-bot@users.noreply.github.com"
+          git add static/etf-live.json
+          git commit -m "data(etf): sync $(date -u +%F)"
+          git push
