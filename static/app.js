@@ -697,6 +697,83 @@ import { etfSummary } from "./etf.js";
     }
   }
 
+  function pulseFavicon() {
+    const link = document.querySelector('link[rel="icon"]');
+    if (!link) return;
+    const size = 64;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const roundRect = (x, y, w, h, r) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    };
+
+    const frames = [];
+    const frameCount = 12;
+    for (let f = 0; f < frameCount; f++) {
+      const phase = (f / frameCount) * Math.PI * 2;
+      const pulse = 0.5 + 0.5 * Math.sin(phase);
+
+      ctx.clearRect(0, 0, size, size);
+      const bg = ctx.createRadialGradient(32, 26, 4, 32, 32, 40);
+      bg.addColorStop(0, "#11111a");
+      bg.addColorStop(1, "#050507");
+      ctx.fillStyle = bg;
+      roundRect(0, 0, size, size, 14);
+      ctx.fill();
+
+      const radius = 18 + pulse * 6;
+      ctx.beginPath();
+      ctx.arc(32, 32, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(0,255,179,${0.10 + (1 - pulse) * 0.55})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(32, 12);
+      ctx.lineTo(50, 32);
+      ctx.lineTo(32, 52);
+      ctx.lineTo(14, 32);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(14, 12, 50, 52);
+      grad.addColorStop(0, "#00ffb3");
+      grad.addColorStop(0.55, "#00e5ff");
+      grad.addColorStop(1, "#b26bff");
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = "#00ffb3";
+      ctx.shadowBlur = 6 + pulse * 6;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      ctx.beginPath();
+      ctx.arc(32, 32, 3.2 + pulse * 1.6, 0, Math.PI * 2);
+      ctx.fillStyle = "#00ffb3";
+      ctx.shadowColor = "#00ffb3";
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      frames.push(canvas.toDataURL("image/png"));
+    }
+
+    let idx = 0;
+    link.type = "image/png";
+    link.href = frames[0];
+    setInterval(() => {
+      link.href = frames[idx++ % frames.length];
+    }, 110);
+  }
+
   function attachTooltip() {
     const canvas = $("priceChart");
     const tip = $("tooltip");
@@ -755,6 +832,7 @@ import { etfSummary } from "./etf.js";
     }, 150);
   });
 
+  pulseFavicon();
   attachTooltip();
   tickClock();
   setInterval(tickClock, 1000);
