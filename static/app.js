@@ -192,6 +192,7 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
         textColor: P.text,
         fontFamily: getComputedStyle(document.body).fontFamily,
         fontSize: 10,
+        attributionLogo: false,
       },
       grid: { vertLines: { color: P.grid }, horzLines: { color: P.grid } },
       rightPriceScale: { borderColor: P.line, scaleMargins: { top: 0.2, bottom: 0.1 } },
