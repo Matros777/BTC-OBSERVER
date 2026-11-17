@@ -19,7 +19,7 @@ export async function getEtfDataset(env, request) {
   const committed = await readCommittedDays(env, request);
   let upstream = null;
   try {
-    upstream = await fetchUpstreamDays(env);
+    upstream = await fetchUpstreamDays();
   } catch {
     /* key missing, quota hit or upstream down — fall back below */
   }

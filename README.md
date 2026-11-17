@@ -119,32 +119,31 @@ npm run pages:deploy
 ## ETF flows: авто-обновление на Cloudflare
 
 farside.co.uk закрыт Cloudflare-челленджем: его не читают ни Worker, ни GitHub Actions, ни curl —
-проверено, все датацентровые IP получают 403. Поэтому основной источник — **cryptoetf.today**
-(бесплатный ключ, 60 запросов/мин, история 30 дней, разбивка по фондам IBIT/FBTC).
+проверено, все датацентровые IP получают 403. Поэтому источник — **cryptoetf.today**, его открытый
+MCP-эндпоинт (`https://mcp.cryptoetf.today/api/mcp`): без аккаунта и без ключа, 60 запросов/мин на IP,
+история 30 дней, разбивка по фондам (IBIT, FBTC и остальные). Значения совпадают с farside.
 
 Как это работает:
 
-- Worker (`functions/_lib/etf-source.js`) берёт `GET /api/v1/flows/btc/funds` с `Authorization: Bearer <key>`
-- ответ кэшируется на 6 часов в edge-кэше, поэтому квота не расходуется
-- цена/индикаторы считаются в браузере, ETF-срез отдаётся через `/api/etf` (в ответе есть поле `source`)
+- Worker (`functions/_lib/etf-source.js`) вызывает MCP-инструмент `get_fund_flows` для `btc`
+- ответ (SSE `data: {...}` → JSON-строка) превращается в `{ "YYYY-MM-DD": { total, ibit, fbtc } }`
+- результат кэшируется на 6 часов в edge-кэше, поэтому квота не расходуется (≈4 запроса в сутки)
+- `/api/etf` и `/api/market` отдают готовый срез, в ответе есть поле `source`
 - порядок фолбэков: `cryptoetf.today` → `static/etf-live.json` → встроенный сид в `static/etf.js`
 - новые дни появляются сами: окно 2W всегда берёт последние 10 торговых дней
 
-Ключ хранится **только** в секрете Worker:
+Ни ключей, ни секретов, ни кронов, ни ноутбука — всё считается внутри Cloudflare при запросе.
 
-```text
-Workers → btc-observer → Settings → Variables and Secrets → Add → Secret
-ETF_API_KEY = <ключ из профиля cryptoetf.today>
-```
-
-Проверка после добавления ключа:
+Проверка:
 
 ```sh
-curl -s https://btc-observer.ivanbenks7-e96.workers.dev/api/etf | jq '{source, window, last: .summary.last}'
+curl -s https://btc-observer.ivanbenks7-e96.workers.dev/api/etf \
+  | jq '{source, window, last: .summary.last}'
+# source: "cryptoetf.today"
 ```
 
 Ручной резерв (если когда-нибудь понадобится): `scripts/etf_sync.mjs` забирает farside через
-локальный Chrome (CDP) и коммитит `static/etf-live.json`; правки в `main` запускают автодеплой.
+локальный Chrome (CDP) и коммитит `static/etf-live.json`.
 
 ## Темы
 
