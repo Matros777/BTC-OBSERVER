@@ -194,7 +194,7 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
         fontSize: 10,
       },
       grid: { vertLines: { color: P.grid }, horzLines: { color: P.grid } },
-      rightPriceScale: { borderColor: P.line, scaleMargins: { top: 0.12, bottom: 0.1 } },
+      rightPriceScale: { borderColor: P.line, scaleMargins: { top: 0.2, bottom: 0.1 } },
       timeScale: {
         borderColor: P.line,
         timeVisible: true,
