@@ -61,36 +61,46 @@ sudo ufw allow from 192.168.216.0/24 to any port 8787 proto tcp
 - `GET /api/etf` — 2-недельный ETF-срез
 - `GET /api/ticker` — 24h тикер Binance
 
-## Cloudflare Pages
+## Cloudflare Workers
 
 Репозиторий: `https://github.com/Matros777/BTC-OBSERVER`
 
-- Build command: `npm run build` (или пусто)
-- Build output directory: `static`
-- Functions: каталог `functions/` — API `/api/market`, `/api/etf`, `/api/klines`, `/api/ticker`
-- Индикаторы считаются в браузере; Functions только отдают свечи и тикер (быстро и без CPU-лимитов)
+Проект в Cloudflare — **Workers** (`btc-observer`), не Pages.
+
+- Entry point: `worker.js`
+- Static assets: `static` → binding `ASSETS`
+- Build command: `npm run build`
+- Deploy command: `npx wrangler deploy`
+- Root directory: `/`
+- API: `/api/market`, `/api/etf`, `/api/klines`, `/api/ticker`
+- Индикаторы считаются в браузере; Worker только отдаёт свечи/тикер и статику
 - Данные Binance: `data-api.binance.vision`, fallback `api.binance.com`
-- ETF-датасет 2W встроен в `functions/_lib/etf.js`, внешний fetch не нужен
+- ETF-датасет 2W встроен в `functions/_lib/etf.js`
+
+`wrangler.toml`:
+
+```toml
+name = "btc-observer"
+main = "worker.js"
+compatibility_date = "2026-11-17"
+
+[assets]
+directory = "./static"
+binding = "ASSETS"
+```
 
 Прямой деплой:
 
 ```sh
 npm install
-npx wrangler pages deploy static
+npx wrangler deploy
 ```
 
-При подключении репозитория в Cloudflare Pages:
+Если нужен отдельный **Pages**-проект (не текущий Workers):
 
-- Framework preset: **None**
-- Build command: `npm run build`
-- Build output directory: `static`
-- **Deploy command:** `npm run deploy` (рекомендуется), `npx wrangler pages deploy static`, **или оставить пустым**
-
-> **Важно:** не используй `npx wrangler deploy` — это Workers, на Pages он падает с `Missing entry-point`.
->
-> Не используй и просто `wrangler pages deploy` — Cloudflare выдаст `wrangler: not found`, потому что `wrangler` установлен локально в `node_modules/.bin`. Нужен `npm run deploy` или `npx wrangler pages deploy static`.
->
-> В настройках Pages: **Settings → Build & deployments → Deploy command**.
+```sh
+npm run pages:deploy
+```
 
 Если Cloudflare не сможет достучаться до Binance, API вернёт 502 — тогда нужен прокси или свой сервер.
 

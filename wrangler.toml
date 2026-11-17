@@ -1,6 +1,7 @@
-# Cloudflare Pages project.
-# Deploy with: npx wrangler pages deploy static
-# Do NOT use `npx wrangler deploy` (that is for Workers, not Pages).
 name = "btc-observer"
+main = "worker.js"
 compatibility_date = "2026-11-17"
-pages_build_output_dir = "static"
+
+[assets]
+directory = "./static"
+binding = "ASSETS"

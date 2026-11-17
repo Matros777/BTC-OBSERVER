@@ -6,8 +6,8 @@
   "description": "BTC Observer — local and Cloudflare Pages dashboard with Binance market data, technical indicators, BTC ETF flows and a cosmic long/short signal.",
   "scripts": {
     "build": "echo \"static site\"",
-    "dev": "wrangler pages dev static",
-    "deploy": "wrangler pages deploy static",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
     "pages:deploy": "wrangler pages deploy static"
   },
   "devDependencies": {
