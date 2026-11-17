@@ -9,3 +9,4 @@ stop.sh
 .dev.vars
 .env
 .env.*
+*.env
