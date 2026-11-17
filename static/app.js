@@ -120,195 +120,205 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
     }
   }
 
-  function drawPriceChart(data) {
-    const canvas = $("priceChart");
-    const { ctx, w, h } = setupCanvas(canvas);
-    ctx.clearRect(0, 0, w, h);
+  // ------------------------------------------------------------------
+  // Price chart: TradingView Lightweight Charts (candles + EMA/BB + 24h cone)
+  // ------------------------------------------------------------------
+  let lwc = null;
+  let lwcSeries = null;
+  let lwcZoomed = false;
 
-    const chart = data.chart;
+  const lwcPalette = () => ({
+    up: C.neon,
+    down: C.pink,
+    text: C.muted,
+    grid: C.grid,
+    line: C.line,
+    crosshair: C.lineStrong,
+    cyan: C.cyan,
+    pink: C.pink,
+    yellow: C.yellow,
+    neon: C.neon,
+    band: alpha(C.cyan, 0.42),
+    cone: alpha(C.neon, 0.38),
+  });
+
+  const toTime = (ms) => Math.floor(Number(ms) / 1000);
+
+  function lineData(candles, values) {
+    const out = [];
+    for (let i = 0; i < values.length && i < candles.length; i++) {
+      const v = values[i];
+      if (v === null || v === undefined || !Number.isFinite(Number(v))) continue;
+      out.push({ time: toTime(candles[i].t), value: Number(v) });
+    }
+    return out;
+  }
+
+  function handleLwcCrosshair(param) {
+    const tip = $("tooltip");
+    if (!tip) return;
+    if (!param || !param.point || param.time === undefined || !lwcSeries || !state.data) {
+      tip.classList.add("hidden");
+      return;
+    }
+    const bar = param.seriesData.get(lwcSeries.candles);
+    if (!bar) { tip.classList.add("hidden"); return; }
+    const up = bar.close >= bar.open;
+    const candles = state.data.chart.candles;
+    const idx = candles.findIndex((k) => toTime(k.t) === param.time);
+    const vol = idx >= 0 ? (state.data.chart.volume || [])[idx] : null;
+    const ema = param.seriesData.get(lwcSeries.ema20);
+    tip.innerHTML = `
+      <b>${new Date(Number(param.time) * 1000).toLocaleString("en-GB")}</b><br>
+      O ${fmtMoney(bar.open, 1)} · H ${fmtMoney(bar.high, 1)}<br>
+      L ${fmtMoney(bar.low, 1)} · C <span class="${up ? "up" : "down"}">${fmtMoney(bar.close, 1)}</span><br>
+      ${ema ? "EMA20 " + fmtMoney(ema.value, 1) + " · " : ""}${vol ? "VOL " + fmtCompact(vol) + " BTC" : ""}
+    `;
+    const host = $("priceChart");
+    tip.style.left = Math.min(host.clientWidth - 190, Math.max(8, param.point.x + 14)) + "px";
+    tip.style.top = Math.max(8, param.point.y - 24) + "px";
+    tip.classList.remove("hidden");
+  }
+
+  function ensureLwc() {
+    const host = $("priceChart");
+    if (!host || !window.LightweightCharts) return null;
+    if (lwc) return lwc;
+    const P = lwcPalette();
+    lwc = window.LightweightCharts.createChart(host, {
+      autoSize: true,
+      layout: {
+        background: { type: "solid", color: "transparent" },
+        textColor: P.text,
+        fontFamily: getComputedStyle(document.body).fontFamily,
+        fontSize: 10,
+      },
+      grid: { vertLines: { color: P.grid }, horzLines: { color: P.grid } },
+      rightPriceScale: { borderColor: P.line, scaleMargins: { top: 0.12, bottom: 0.1 } },
+      timeScale: {
+        borderColor: P.line,
+        timeVisible: true,
+        secondsVisible: false,
+        rightOffset: 10,
+        barSpacing: 5,
+        fixLeftEdge: false,
+      },
+      crosshair: {
+        mode: window.LightweightCharts.CrosshairMode.Normal,
+        vertLine: { color: P.crosshair, style: 2, labelBackgroundColor: C.text },
+        horzLine: { color: P.crosshair, style: 2, labelBackgroundColor: C.text },
+      },
+      localization: { priceFormatter: (v) => fmtMoney(v, Math.abs(v) >= 1000 ? 0 : 2) },
+    });
+    lwcSeries = {
+      candles: lwc.addCandlestickSeries({
+        upColor: P.up,
+        downColor: P.down,
+        borderUpColor: P.up,
+        borderDownColor: P.down,
+        wickUpColor: P.up,
+        wickDownColor: P.down,
+        priceLineColor: P.neon,
+        priceLineStyle: 2,
+      }),
+      ema20: lwc.addLineSeries({ color: P.cyan, lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }),
+      ema50: lwc.addLineSeries({ color: P.pink, lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }),
+      ema200: lwc.addLineSeries({ color: P.yellow, lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }),
+      bbUpper: lwc.addLineSeries({ color: P.band, lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }),
+      bbLower: lwc.addLineSeries({ color: P.band, lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }),
+      coneUp: lwc.addLineSeries({ color: P.cone, lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }),
+      coneDown: lwc.addLineSeries({ color: P.cone, lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }),
+      median: lwc.addLineSeries({ color: P.neon, lineWidth: 2, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }),
+    };
+    lwc.subscribeCrosshairMove(handleLwcCrosshair);
+    return lwc;
+  }
+
+  function drawPriceChart(data) {
+    const chart = data.chart || {};
     const candles = chart.candles || [];
     if (!candles.length) return;
+    if (!ensureLwc()) return;
+    const P = lwcPalette();
 
-    const padL = 10, padR = 66, padT = 12, padB = 24;
-    const plotW = w - padL - padR;
-    const plotH = h - padT - padB;
-    const forecast = data.prediction && data.prediction.path ? data.prediction.path : [];
-    const total = candles.length + Math.max(0, forecast.length - 1);
+    lwc.applyOptions({
+      layout: {
+        background: { type: "solid", color: "transparent" },
+        textColor: P.text,
+        fontFamily: getComputedStyle(document.body).fontFamily,
+        fontSize: 10,
+      },
+      grid: { vertLines: { color: P.grid }, horzLines: { color: P.grid } },
+      rightPriceScale: { borderColor: P.line },
+      timeScale: { borderColor: P.line },
+      crosshair: {
+        vertLine: { color: P.crosshair, labelBackgroundColor: C.text },
+        horzLine: { color: P.crosshair, labelBackgroundColor: C.text },
+      },
+    });
+    lwcSeries.candles.applyOptions({
+      upColor: P.up, downColor: P.down,
+      borderUpColor: P.up, borderDownColor: P.down,
+      wickUpColor: P.up, wickDownColor: P.down,
+      priceLineColor: P.neon,
+    });
+    lwcSeries.ema20.applyOptions({ color: P.cyan });
+    lwcSeries.ema50.applyOptions({ color: P.pink });
+    lwcSeries.ema200.applyOptions({ color: P.yellow });
+    lwcSeries.bbUpper.applyOptions({ color: P.band });
+    lwcSeries.bbLower.applyOptions({ color: P.band });
+    lwcSeries.coneUp.applyOptions({ color: P.cone });
+    lwcSeries.coneDown.applyOptions({ color: P.cone });
+    lwcSeries.median.applyOptions({ color: P.neon });
 
-    let min = Infinity, max = -Infinity;
-    for (const k of candles) { if (k.l < min) min = k.l; if (k.h > max) max = k.h; }
-    for (let i = 0; i < chart.bb_lower.length; i++) {
-      const lo = chart.bb_lower[i], hi = chart.bb_upper[i];
-      if (lo !== null && lo < min) min = lo;
-      if (hi !== null && hi > max) max = hi;
-    }
-    if (forecast.length) {
-      const last = candles[candles.length - 1].c;
-      const p10 = data.prediction.p10, p90 = data.prediction.p90;
-      min = Math.min(min, p10, last);
-      max = Math.max(max, p90, last);
-    }
-    const pad = (max - min) * 0.06 || 1;
-    min -= pad; max += pad;
-    const xOf = (i) => padL + (i / Math.max(1, total - 1)) * plotW;
-    const yOf = (v) => padT + (1 - (v - min) / (max - min || 1)) * plotH;
+    lwcSeries.candles.setData(candles.map((k) => ({
+      time: toTime(k.t), open: k.o, high: k.h, low: k.l, close: k.c,
+    })));
+    lwcSeries.ema20.setData(lineData(candles, chart.ema20 || []));
+    lwcSeries.ema50.setData(lineData(candles, chart.ema50 || []));
+    lwcSeries.ema200.setData(lineData(candles, chart.ema200 || []));
+    lwcSeries.bbUpper.setData(lineData(candles, chart.bb_upper || []));
+    lwcSeries.bbLower.setData(lineData(candles, chart.bb_lower || []));
 
-    // grid
-    ctx.strokeStyle = C.grid;
-    ctx.lineWidth = 1;
-    ctx.font = "10px " + getComputedStyle(document.body).fontFamily;
-    ctx.fillStyle = C.dim;
-    for (let i = 0; i <= 4; i++) {
-      const y = padT + (plotH * i) / 4;
-      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
-      const val = max - ((max - min) * i) / 4;
-      ctx.textAlign = "left";
-      ctx.fillText(fmtMoney(val, 0), w - padR + 8, y + 3);
-    }
-    const stepX = Math.max(1, Math.floor(total / 7));
-    for (let i = 0; i < total; i += stepX) {
-      const x = xOf(i);
-      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH); ctx.stroke();
-      const c = candles[Math.min(i, candles.length - 1)];
-      if (c) {
-        ctx.textAlign = "center";
-        ctx.fillStyle = C.dim;
-        ctx.fillText(dateLabel(c.t) + " " + timeLabel(c.t), x, h - 6);
-      }
-    }
-
-    // bollinger band fill
-    ctx.beginPath();
-    let started = false;
-    for (let i = 0; i < chart.bb_upper.length; i++) {
-      const v = chart.bb_upper[i];
-      if (v === null) continue;
-      const x = xOf(i), y = yOf(v);
-      if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
-    }
-    for (let i = chart.bb_lower.length - 1; i >= 0; i--) {
-      const v = chart.bb_lower[i];
-      if (v === null) continue;
-      ctx.lineTo(xOf(i), yOf(v));
-    }
-    ctx.closePath();
-    ctx.fillStyle = alpha(C.cyan, 0.08);
-    ctx.fill();
-    ctx.strokeStyle = alpha(C.cyan, 0.30);
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // candles
-    const cw = Math.max(1, (plotW / total) * 0.62);
-    for (let i = 0; i < candles.length; i++) {
-      const k = candles[i];
-      const up = k.c >= k.o;
-      const color = up ? C.neon : C.pink;
-      const x = xOf(i);
-      ctx.strokeStyle = color;
-      ctx.fillStyle = color;
-      ctx.globalAlpha = 0.95;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(x, yOf(k.h));
-      ctx.lineTo(x, yOf(k.l));
-      ctx.stroke();
-      const yo = yOf(k.o), yc = yOf(k.c);
-      const top = Math.min(yo, yc), height = Math.max(1, Math.abs(yc - yo));
-      ctx.fillRect(x - cw / 2, top, cw, height);
-    }
-    ctx.globalAlpha = 1;
-
-    // EMAs
-    const drawSeries = (series, color, width, glow) => {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = width;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = glow;
-      ctx.beginPath();
-      let started = false;
-      for (let i = 0; i < series.length; i++) {
-        const v = series[i];
-        if (v === null) { started = false; continue; }
-        const x = xOf(i), y = yOf(v);
-        if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    };
-    drawSeries(chart.ema20, C.cyan, 1.4, 6);
-    drawSeries(chart.ema50, C.pink, 1.4, 6);
-    drawSeries(chart.ema200, C.yellow, 1.4, 6);
-
-    // forecast cone + path
-    if (forecast.length > 1) {
-      const baseIndex = candles.length - 1;
-      const p10 = data.prediction.p10, p90 = data.prediction.p90;
-      const half = Math.max(0, (p90 - p10) / 2);
-      ctx.beginPath();
-      for (let i = 1; i < forecast.length; i++) {
-        const x = xOf(baseIndex + i);
-        const y = yOf(forecast[i] + half * (i / (forecast.length - 1)));
-        if (i === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      for (let i = forecast.length - 1; i >= 1; i--) {
-        const x = xOf(baseIndex + i);
-        const y = yOf(forecast[i] - half * (i / (forecast.length - 1)));
-        ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-      ctx.fillStyle = alpha(C.neon, 0.07);
-      ctx.fill();
-      ctx.strokeStyle = alpha(C.neon, 0.22);
-      ctx.setLineDash([2, 4]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      ctx.beginPath();
-      for (let i = 0; i < forecast.length; i++) {
-        const x = xOf(baseIndex + i);
-        const y = yOf(forecast[i]);
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.strokeStyle = C.neon;
-      ctx.lineWidth = 1.6;
-      ctx.shadowColor = C.neon;
-      ctx.shadowBlur = 10;
-      ctx.setLineDash([5, 5]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.shadowBlur = 0;
-
-      // NOW divider
-      const xNow = xOf(baseIndex);
-      ctx.strokeStyle = C.lineStrong;
-      ctx.setLineDash([2, 4]);
-      ctx.beginPath(); ctx.moveTo(xNow, padT); ctx.lineTo(xNow, padT + plotH); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = C.dim;
-      ctx.textAlign = "center";
-      ctx.fillText("NOW", xNow, padT - 2);
-    }
-
-    // last price line
+    const pred = data.prediction || {};
+    const path = Array.isArray(pred.path) ? pred.path : [];
     const last = candles[candles.length - 1];
-    const yLast = yOf(last.c);
-    ctx.strokeStyle = alpha(C.neon, 0.45);
-    ctx.setLineDash([3, 4]);
-    ctx.beginPath(); ctx.moveTo(padL, yLast); ctx.lineTo(w - padR, yLast); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = C.neon;
-    ctx.textAlign = "left";
-    ctx.fillText(fmtMoney(last.c, 0), w - padR + 8, yLast + 3);
+    const step = 3600;
+    const t0 = toTime(last.t);
+    if (path.length > 1 && Number.isFinite(pred.p10) && Number.isFinite(pred.p90)) {
+      const half = Math.max(0, (pred.p90 - pred.p10) / 2);
+      const up = [], down = [], mid = [];
+      for (let i = 0; i < path.length; i++) {
+        const frac = i / (path.length - 1);
+        const time = t0 + i * step;
+        up.push({ time, value: path[i] + half * frac });
+        down.push({ time, value: path[i] - half * frac });
+        mid.push({ time, value: path[i] });
+      }
+      lwcSeries.coneUp.setData(up);
+      lwcSeries.coneDown.setData(down);
+      lwcSeries.median.setData(mid);
+      lwcSeries.candles.setMarkers([{
+        time: t0,
+        position: "aboveBar",
+        color: P.neon,
+        shape: "circle",
+        text: "NOW",
+      }]);
+    } else {
+      lwcSeries.coneUp.setData([]);
+      lwcSeries.coneDown.setData([]);
+      lwcSeries.median.setData([]);
+      lwcSeries.candles.setMarkers([]);
+    }
 
-    // hover crosshair
-    if (state.hover && state.hover.chart === "price") {
-      const i = Math.max(0, Math.min(candles.length - 1, state.hover.index));
-      const x = xOf(i);
-      ctx.strokeStyle = C.lineStrong;
-      ctx.setLineDash([2, 3]);
-      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH); ctx.stroke();
-      ctx.setLineDash([]);
+    // first paint: show the recent window plus the forecast tail instead of all 500 bars
+    if (!lwcZoomed) {
+      lwcZoomed = true;
+      const host = $("priceChart");
+      const narrow = host && host.clientWidth < 640;
+      const bars = Math.min(narrow ? 90 : 200, candles.length);
+      lwc.timeScale().setVisibleLogicalRange({ from: candles.length - bars, to: candles.length + 26 });
     }
   }
 
@@ -810,45 +820,6 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
     }, 110);
   }
 
-  function attachTooltip() {
-    const canvas = $("priceChart");
-    const tip = $("tooltip");
-    canvas.addEventListener("mousemove", (ev) => {
-      if (!state.data) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = ev.clientX - rect.left;
-      const padL = 10, padR = 66;
-      const plotW = rect.width - padL - padR;
-      const candles = state.data.chart.candles;
-      const total = candles.length + (state.data.prediction.path.length - 1);
-      const idx = Math.round(((x - padL) / plotW) * (total - 1));
-      if (idx < 0 || idx >= candles.length) {
-        tip.classList.add("hidden");
-        state.hover = null;
-        drawPriceChart(state.data);
-        return;
-      }
-      const k = candles[idx];
-      state.hover = { chart: "price", index: idx };
-      const up = k.c >= k.o;
-      tip.innerHTML = `
-        <b>${new Date(k.t).toLocaleString("en-GB")}</b><br>
-        O ${fmtMoney(k.o, 1)} · H ${fmtMoney(k.h, 1)}<br>
-        L ${fmtMoney(k.l, 1)} · C <span class="${up ? "up" : "down"}">${fmtMoney(k.c, 1)}</span><br>
-        VOL ${fmtCompact(k.v)} BTC
-      `;
-      tip.style.left = Math.min(rect.width - 170, Math.max(8, x + 12)) + "px";
-      tip.style.top = Math.max(8, ev.clientY - rect.top - 20) + "px";
-      tip.classList.remove("hidden");
-      drawPriceChart(state.data);
-    });
-    canvas.addEventListener("mouseleave", () => {
-      tip.classList.add("hidden");
-      state.hover = null;
-      if (state.data) drawPriceChart(state.data);
-    });
-  }
-
   function tickClock() {
     const now = new Date();
     $("clock").textContent = now.toLocaleTimeString("en-GB");
@@ -901,7 +872,6 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
   }
 
   pulseFavicon();
-  attachTooltip();
   initTheme();
   tickClock();
   setInterval(tickClock, 1000);
