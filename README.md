@@ -116,29 +116,35 @@ npm run pages:deploy
 
 Если Cloudflare не сможет достучаться до Binance, API вернёт 502 — тогда нужен прокси или свой сервер.
 
-## ETF flows: авто-обновление дней
+## ETF flows: авто-обновление на Cloudflare
 
-farside.co.uk закрыт Cloudflare-челленджем: ни Worker, ни GitHub Actions, ни curl его не читают.
-Поэтому свежие дни забирает реальный браузер на asus и коммитит их в репозиторий.
+farside.co.uk закрыт Cloudflare-челленджем: его не читают ни Worker, ни GitHub Actions, ни curl —
+проверено, все датацентровые IP получают 403. Поэтому основной источник — **cryptoetf.today**
+(бесплатный ключ, 60 запросов/мин, история 30 дней, разбивка по фондам IBIT/FBTC).
 
-- Сид (исторический датасет) — `static/etf.js`
-- Живые дни — `static/etf-live.json` (`{ "updated": "...", "days": { "YYYY-MM-DD": {...} } }`)
-- Фронт мержит live поверх сида (`loadEtfDataset()`), окно 2W сдвигается само
-- Worker: `/api/etf` и `/api/market` читают тот же файл через `ASSETS`
-- Локальный `server.py` тоже подхватывает `static/etf-live.json`
+Как это работает:
 
-Ручной синк (asus, Chrome с CDP на `127.0.0.1:9222`):
+- Worker (`functions/_lib/etf-source.js`) берёт `GET /api/v1/flows/btc/funds` с `Authorization: Bearer <key>`
+- ответ кэшируется на 6 часов в edge-кэше, поэтому квота не расходуется
+- цена/индикаторы считаются в браузере, ETF-срез отдаётся через `/api/etf` (в ответе есть поле `source`)
+- порядок фолбэков: `cryptoetf.today` → `static/etf-live.json` → встроенный сид в `static/etf.js`
+- новые дни появляются сами: окно 2W всегда берёт последние 10 торговых дней
 
-```sh
-DISPLAY=:0 node scripts/etf_sync.mjs --dry-run   # только распарсить
-DISPLAY=:0 node scripts/etf_sync.mjs             # распарсить + коммит в main
+Ключ хранится **только** в секрете Worker:
+
+```text
+Workers → btc-observer → Settings → Variables and Secrets → Add → Secret
+ETF_API_KEY = <ключ из профиля cryptoetf.today>
 ```
 
-Токен с правом `contents:write` берётся из `GITHUB_TOKEN` или
-`~/.config/btc-observer/github_token` (chmod 600). Коммит в `main` запускает автодеплой.
+Проверка после добавления ключа:
 
-Ежедневный запуск — systemd-таймер `btc-etf-sync.timer` (01:10, 02:10, 03:10, 04:10 по локальному времени;
-скрипт идемпотентен и ничего не коммитит, если новых дней нет).
+```sh
+curl -s https://btc-observer.ivanbenks7-e96.workers.dev/api/etf | jq '{source, window, last: .summary.last}'
+```
+
+Ручной резерв (если когда-нибудь понадобится): `scripts/etf_sync.mjs` забирает farside через
+локальный Chrome (CDP) и коммитит `static/etf-live.json`; правки в `main` запускают автодеплой.
 
 ## Темы
 

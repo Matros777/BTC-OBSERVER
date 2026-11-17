@@ -699,15 +699,19 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
   async function fetchData() {
     setStatus("SYNC", true);
     try {
-      const [k1h, k1d, ticker, etfDataset] = await Promise.all([
+      const [k1h, k1d, ticker, etfDataset, etfApi] = await Promise.all([
         fetchJson("/api/klines?interval=1h&limit=500"),
         fetchJson("/api/klines?interval=1d&limit=250"),
         fetchJson("/api/ticker"),
         loadEtfDataset().catch(() => null),
+        fetchJson("/api/etf").catch(() => null),
       ]);
       if (!k1h.klines || !k1h.klines.length) throw new Error(k1h.error || "no klines");
       const data = analyze(k1h.klines, ticker);
-      data.etf = etfSummary(data.price, 10, etfDataset || undefined);
+      // The Worker resolves flows from cryptoetf.today; the local server and
+      // the offline path still fall back to the embedded seed + live file.
+      if (etfApi && Array.isArray(etfApi.daily) && etfApi.daily.length) data.etf = etfApi;
+      else data.etf = etfSummary(data.price, 10, etfDataset || undefined);
       try {
         data.longTerm = analyzeLongTerm(k1d.klines);
       } catch {

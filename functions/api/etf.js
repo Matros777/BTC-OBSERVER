@@ -14,12 +14,15 @@ const json = (obj, status = 200) =>
 
 export async function onRequestGet({ request, env }) {
   try {
-    const [ticker, dataset] = await Promise.all([
+    const [ticker, etf] = await Promise.all([
       getTicker(),
       getEtfDataset(env, request),
     ]);
     const price = Number(ticker.lastPrice || 0);
-    return json(etfSummary(price, 10, dataset));
+    const body = etfSummary(price, 10, etf.dataset);
+    body.source = etf.source;
+    body.upstreamUpdatedAt = etf.updatedAt;
+    return json(body);
   } catch (err) {
     return json({ error: String(err && err.message ? err.message : err) }, 502);
   }

@@ -15,13 +15,15 @@ const json = (obj, status = 200) =>
 
 export async function onRequestGet({ request, env }) {
   try {
-    const [klines, ticker, etfDataset] = await Promise.all([
+    const [klines, ticker, etf] = await Promise.all([
       getKlines("1h", 500),
       getTicker(),
       getEtfDataset(env, request),
     ]);
     const data = analyze(klines, ticker);
-    data.etf = etfSummary(data.price, 10, etfDataset);
+    data.etf = etfSummary(data.price, 10, etf.dataset);
+    data.etf.source = etf.source;
+    data.etf.upstreamUpdatedAt = etf.updatedAt;
     try {
       data.longTerm = analyzeLongTerm(await getKlines("1d", 250));
     } catch {
