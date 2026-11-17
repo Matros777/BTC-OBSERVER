@@ -74,7 +74,7 @@ sudo ufw allow from 192.168.216.0/24 to any port 8787 proto tcp
 - Root directory: `/`
 - API: `/api/market`, `/api/etf`, `/api/klines`, `/api/ticker`
 - Индикаторы считаются в браузере; Worker только отдаёт свечи/тикер и статику
-- Данные Binance: `data-api.binance.vision`, fallback `api.binance.com`
+- Данные: MEXC (Binance-compatible) → `data-api.binance.vision` → `api.binance.com` fallback
 - ETF-датасет 2W встроен в `functions/_lib/etf.js`
 
 `wrangler.toml`:

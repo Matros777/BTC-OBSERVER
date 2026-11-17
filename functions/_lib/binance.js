@@ -1,9 +1,28 @@
-// Binance public market data with Cloudflare cache.
+// Market data with provider fallback.
+// MEXC is Binance-compatible and reachable from Cloudflare; Binance is fallback.
+// Credentials/proxy are never stored here — use Cloudflare secrets if needed.
 
-const BASES = [
-  "https://data-api.binance.vision",
-  "https://api.binance.com",
+const PROVIDERS = [
+  {
+    name: "mexc",
+    base: "https://api.mexc.com",
+    interval: (value) => (value === "1h" ? "60m" : value),
+    tickerScale: 100,
+  },
+  {
+    name: "binance-vision",
+    base: "https://data-api.binance.vision",
+    interval: (value) => value,
+    tickerScale: 1,
+  },
+  {
+    name: "binance",
+    base: "https://api.binance.com",
+    interval: (value) => value,
+    tickerScale: 1,
+  },
 ];
+
 const TTL = 30;
 
 async function fetchJson(url, timeoutMs = 12000) {
@@ -25,28 +44,16 @@ async function fetchJson(url, timeoutMs = 12000) {
   }
 }
 
-async function cachedJson(path) {
-  const key = new Request(`https://btc-observer-cache.local${path}`);
+async function cachedJson(url) {
+  const key = new Request(`https://btc-observer-cache.local/${encodeURIComponent(url)}`);
   if (typeof caches !== "undefined" && caches.default) {
     const hit = await caches.default.match(key);
     if (hit) return hit.json();
   }
 
-  let lastError = null;
-  let data = null;
-  for (const base of BASES) {
-    try {
-      data = await fetchJson(base + path);
-      break;
-    } catch (err) {
-      lastError = err;
-    }
-  }
-  if (data === null) throw lastError || new Error("Binance unavailable");
-
+  const data = await fetchJson(url);
   if (typeof caches !== "undefined" && caches.default) {
-    const body = JSON.stringify(data);
-    const response = new Response(body, {
+    const response = new Response(JSON.stringify(data), {
       headers: {
         "Content-Type": "application/json",
         "Cache-Control": `public, max-age=${TTL}`,
@@ -58,23 +65,45 @@ async function cachedJson(path) {
 }
 
 export async function getKlines(interval = "1h", limit = 500) {
-  const path = `/api/v3/klines?symbol=BTCUSDT&interval=${encodeURIComponent(interval)}&limit=${limit}`;
-  const raw = await cachedJson(path);
-  return raw.map((k) => ({
-    t: Number(k[0]),
-    o: Number(k[1]),
-    h: Number(k[2]),
-    l: Number(k[3]),
-    c: Number(k[4]),
-    v: Number(k[5]),
-    ct: Number(k[6]),
-    qv: Number(k[7]),
-    n: Number(k[8]),
-    tb: Number(k[9]),
-    tq: Number(k[10]),
-  }));
+  let lastError = null;
+  for (const provider of PROVIDERS) {
+    try {
+      const iv = provider.interval(interval);
+      const url = `${provider.base}/api/v3/klines?symbol=BTCUSDT&interval=${encodeURIComponent(iv)}&limit=${limit}`;
+      const raw = await cachedJson(url);
+      return raw.map((k) => ({
+        t: Number(k[0]),
+        o: Number(k[1]),
+        h: Number(k[2]),
+        l: Number(k[3]),
+        c: Number(k[4]),
+        v: Number(k[5]),
+        ct: Number(k[6]),
+        qv: Number(k[7]),
+        n: Number(k[8] || 0),
+        tb: Number(k[9] || 0),
+        tq: Number(k[10] || 0),
+      }));
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError || new Error("market data unavailable");
 }
 
 export async function getTicker() {
-  return cachedJson("/api/v3/ticker/24hr?symbol=BTCUSDT");
+  let lastError = null;
+  for (const provider of PROVIDERS) {
+    try {
+      const url = `${provider.base}/api/v3/ticker/24hr?symbol=BTCUSDT`;
+      const data = await cachedJson(url);
+      if (provider.tickerScale !== 1 && data.priceChangePercent !== null && data.priceChangePercent !== undefined) {
+        data.priceChangePercent = Number(data.priceChangePercent) * provider.tickerScale;
+      }
+      return data;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError || new Error("ticker unavailable");
 }
