@@ -1,4 +1,7 @@
 /* BTC // OBSERVER — frontend */
+import { analyze, analyzeLongTerm } from "./analysis.js";
+import { etfSummary } from "./etf.js";
+
 (() => {
   "use strict";
 
@@ -656,17 +659,41 @@
     showError(null);
   }
 
+  async function fetchJson(url) {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res.json();
+  }
+
   async function fetchData() {
     setStatus("SYNC", true);
     try {
-      const res = await fetch("/api/market", { cache: "no-store" });
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      const [k1h, k1d, ticker] = await Promise.all([
+        fetchJson("/api/klines?interval=1h&limit=500"),
+        fetchJson("/api/klines?interval=1d&limit=250"),
+        fetchJson("/api/ticker"),
+      ]);
+      if (!k1h.klines || !k1h.klines.length) throw new Error(k1h.error || "no klines");
+      const data = analyze(k1h.klines, ticker);
+      data.etf = etfSummary(data.price);
+      try {
+        data.longTerm = analyzeLongTerm(k1d.klines);
+      } catch {
+        data.longTerm = { score: 0, label: "NEUTRAL", confidence: 0, details: {}, signals: [] };
+      }
       render(data);
     } catch (err) {
-      setStatus("OFFLINE", false);
-      showError("BINANCE API: " + err.message);
+      // Fallback for the local Python server / older API deployments.
+      try {
+        const res = await fetch("/api/market", { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        render(data);
+      } catch (err2) {
+        setStatus("OFFLINE", false);
+        showError("BINANCE API: " + err2.message);
+      }
     }
   }
 

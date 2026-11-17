@@ -1117,6 +1117,13 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"error": str(exc)}, 502)
             return
 
+        if path == "/api/ticker":
+            try:
+                self._send_json(get_ticker())
+            except (HTTPError, URLError, TimeoutError, ValueError) as exc:
+                self._send_json({"error": str(exc)}, 502)
+            return
+
         if path in ("/", ""):
             self._send_file("index.html")
             return

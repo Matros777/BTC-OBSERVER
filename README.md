@@ -59,6 +59,7 @@ sudo ufw allow from 192.168.216.0/24 to any port 8787 proto tcp
 - `GET /api/klines?interval=1h&limit=500` — свечи
 - `GET /api/market` — цена, индикаторы, сигналы, прогноз, ETF, long-term
 - `GET /api/etf` — 2-недельный ETF-срез
+- `GET /api/ticker` — 24h тикер Binance
 
 ## Cloudflare Pages
 
@@ -66,7 +67,8 @@ sudo ufw allow from 192.168.216.0/24 to any port 8787 proto tcp
 
 - Build command: `npm run build` (или пусто)
 - Build output directory: `static`
-- Functions: каталог `functions/` — API `/api/market`, `/api/etf`, `/api/klines`
+- Functions: каталог `functions/` — API `/api/market`, `/api/etf`, `/api/klines`, `/api/ticker`
+- Индикаторы считаются в браузере; Functions только отдают свечи и тикер (быстро и без CPU-лимитов)
 - Данные Binance: `data-api.binance.vision`, fallback `api.binance.com`
 - ETF-датасет 2W встроен в `functions/_lib/etf.js`, внешний fetch не нужен
 

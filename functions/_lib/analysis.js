@@ -518,7 +518,7 @@ export function analyze(klines, ticker) {
   mu = clamp(mu, -sigma * 0.5, sigma * 0.5);
 
   const steps = 24;
-  const simulations = 2000;
+  const simulations = 1000;
   const finals = [];
   const paths = [];
   for (let n = 0; n < simulations; n++) {
@@ -536,10 +536,15 @@ export function analyze(klines, ticker) {
   const p10 = finals[Math.floor(0.1 * finals.length)];
   const p90 = finals[Math.floor(0.9 * finals.length)];
   const probUp = finals.filter((f) => f > price).length / finals.length;
-  const medianPath = Array.from({ length: steps + 1 }, (_, i) => {
-    const vals = paths.map((p) => p[i]).sort((a, b) => a - b);
-    return vals[Math.floor(vals.length / 2)];
-  });
+  let medianPath = paths[0];
+  let bestDiff = Math.abs(medianPath[steps] - medianFinal);
+  for (const path of paths) {
+    const diff = Math.abs(path[steps] - medianFinal);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      medianPath = path;
+    }
+  }
   const forecastConfidence = clamp(30 + Math.abs(compositeScore) * 0.4 + Math.min(adxForConf, 50) * 0.4, 0, 90);
 
   const tailN = 180;
