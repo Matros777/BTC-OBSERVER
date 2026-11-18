@@ -5,7 +5,7 @@
   "type": "module",
   "description": "BTC Observer — local and Cloudflare Pages dashboard with Binance market data, technical indicators, BTC ETF flows and a cosmic long/short signal.",
   "scripts": {
-    "build": "node scripts/build-etf.mjs",
+    "build": "node scripts/build-shared.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "pages:deploy": "wrangler pages deploy static",
