@@ -568,7 +568,7 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
           <span class="signal-badge ${badgeCls}">${s.signal}</span>
         </div>
         <div class="signal-value">${s.value}</div>
-        <div class="signal-note">score ${s.score >= 0 ? "+" : ""}${s.score.toFixed(2)}${s.weight > 0 ? ` · weight ${s.weight}` : s.note ? ` · ${s.note}` : ""}</div>
+        <div class="signal-note">${s.weight > 0 ? `score ${s.score >= 0 ? "+" : ""}${s.score.toFixed(2)} · weight ${s.weight}` : (s.note || "")}</div>
       `;
       grid.appendChild(card);
     }
@@ -790,7 +790,7 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
     const crossTag = $("emaCrossTag");
     if (crossTag) {
       crossTag.textContent = ec.lastEvent
-        ? `${ec.label} · ${ec.lastEvent.pair} ${ec.lastEvent.dir === "up" ? "▲" : "▼"} ${shortDate(new Date(ec.lastEvent.t).toISOString().slice(0, 10))}`
+        ? `${ec.label} · ${ec.lastEvent.pair} ${ec.lastEvent.dir === "up" ? "▲" : "▼"} ${new Date(ec.lastEvent.t).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}`
         : (ec.label || "--");
       crossTag.style.color = ec.state === "bull" ? "var(--neon)" : ec.state === "bear" ? "var(--pink)" : "";
     }
