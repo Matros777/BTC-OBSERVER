@@ -392,6 +392,51 @@ export function analyze(klines, ticker) {
   const senkouAV = lastValid(ichi.senkou_a);
   const senkouBV = lastValid(ichi.senkou_b);
 
+  // ------------------------------------------------------------------
+  // EMA cross: 20/50, 50/200, 20/200. Upward cross = BUY, downward = SELL.
+  // ------------------------------------------------------------------
+  const emaCross = (() => {
+    const pairs = [
+      ["20/50", ema20, ema50],
+      ["50/200", ema50, ema200],
+      ["20/200", ema20, ema200],
+    ];
+    const spreads = {};
+    const events = [];
+    for (const [name, a, b] of pairs) {
+      const line = new Array(klines.length).fill(null);
+      for (let i = 0; i < klines.length; i++) {
+        const av = a[i];
+        const bv = b[i];
+        if (av === null || bv === null || !bv) continue;
+        line[i] = (av / bv - 1) * 100;
+        if (i === 0) continue;
+        const prev = line[i - 1];
+        if (prev === null) continue;
+        if (prev <= 0 && line[i] > 0) events.push({ t: klines[i].t, dir: "up", pair: name });
+        else if (prev >= 0 && line[i] < 0) events.push({ t: klines[i].t, dir: "down", pair: name });
+      }
+      spreads[name] = line;
+    }
+    events.sort((a, b) => a.t - b.t);
+    const last = klines.length - 1;
+    const sgn = (v) => (v === null || v === undefined ? 0 : v > 0 ? 1 : v < 0 ? -1 : 0);
+    const s1 = sgn(spreads["20/50"][last]);
+    const s2 = sgn(spreads["50/200"][last]);
+    const s3 = sgn(spreads["20/200"][last]);
+    const score = clamp(100 * (0.45 * s1 + 0.35 * s2 + 0.2 * s3), -100, 100);
+    const state = s1 > 0 && s2 > 0 ? "bull" : s1 < 0 && s2 < 0 ? "bear" : "mixed";
+    return {
+      spreads,
+      events,
+      score: Number(score.toFixed(1)),
+      state,
+      label: state === "bull" ? "BUY" : state === "bear" ? "SELL" : "MIXED",
+      stack: `20 ${s1 > 0 ? ">" : "<"} 50 ${s2 > 0 ? ">" : "<"} 200`,
+      lastEvent: events.length ? events[events.length - 1] : null,
+    };
+  })();
+
   const signals = [];
   const add = (name, value, signal, score, weight = 1, note = "") => {
     signals.push({ name, value, signal, score: Number(clamp(score, -1, 1).toFixed(3)), weight, note });
@@ -490,6 +535,17 @@ export function analyze(klines, ticker) {
     add("Pivot", `P $${piv.p.toFixed(0)}`, s > 0 ? "ABOVE" : "BELOW", s, 0.4);
   }
 
+  add(
+    "EMA CROSS",
+    emaCross.stack,
+    emaCross.label,
+    emaCross.score / 100,
+    0,
+    emaCross.lastEvent
+      ? `${emaCross.lastEvent.pair} ${emaCross.lastEvent.dir === "up" ? "▲" : "▼"} ${new Date(emaCross.lastEvent.t).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}`
+      : "no cross yet"
+  );
+
   const totalWeight = signals.reduce((a, s) => a + s.weight, 0) || 1;
   const compositeScore = (signals.reduce((a, s) => a + s.score * s.weight, 0) / totalWeight) * 100;
   let compositeLabel;
@@ -547,9 +603,10 @@ export function analyze(klines, ticker) {
   }
   const forecastConfidence = clamp(30 + Math.abs(compositeScore) * 0.4 + Math.min(adxForConf, 50) * 0.4, 0, 90);
 
-  const tailN = 180;
+  const tailN = 240;
   const start = Math.max(0, klines.length - tailN);
   const tail = (series) => series.slice(start);
+
   const chart = {
     candles: klines.slice(start),
     ema20: tail(ema20),
@@ -563,6 +620,11 @@ export function analyze(klines, ticker) {
     macd_signal: tail(macdData.signal),
     macd_hist: tail(macdData.hist),
     volume: klines.slice(start).map((k) => k.v),
+    ema_cross: {
+      p2050: tail(emaCross.spreads["20/50"]),
+      p50200: tail(emaCross.spreads["50/200"]),
+      events: emaCross.events.filter((ev) => ev.t >= klines[start].t),
+    },
   };
 
   return {
@@ -612,6 +674,13 @@ export function analyze(klines, ticker) {
       score: Number(compositeScore.toFixed(1)),
       label: compositeLabel,
       confidence: Number(confidence.toFixed(1)),
+    },
+    emaCross: {
+      score: emaCross.score,
+      state: emaCross.state,
+      label: emaCross.label,
+      stack: emaCross.stack,
+      lastEvent: emaCross.lastEvent,
     },
     prediction: {
       horizon: "24h",

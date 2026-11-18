@@ -126,6 +126,9 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
   let lwc = null;
   let lwcSeries = null;
   let lwcZoomed = false;
+  const panelCharts = {};
+  const lwcCharts = [];
+  let lwcSyncGuard = false;
 
   const lwcPalette = () => ({
     up: C.neon,
@@ -232,6 +235,9 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
       median: lwc.addLineSeries({ color: P.neon, lineWidth: 2, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }),
     };
     lwc.subscribeCrosshairMove(handleLwcCrosshair);
+    panelCharts.price = lwc;
+    lwc.__main = lwcSeries.candles;
+    registerSync(lwc);
     return lwc;
   }
 
@@ -280,6 +286,7 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
     lwcSeries.ema200.setData(lineData(candles, chart.ema200 || []));
     lwcSeries.bbUpper.setData(lineData(candles, chart.bb_upper || []));
     lwcSeries.bbLower.setData(lineData(candles, chart.bb_lower || []));
+    lwc.__values = new Map(candles.map((k) => [toTime(k.t), k.c]));
 
     const pred = data.prediction || {};
     const path = Array.isArray(pred.path) ? pred.path : [];
@@ -299,13 +306,23 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
       lwcSeries.coneUp.setData(up);
       lwcSeries.coneDown.setData(down);
       lwcSeries.median.setData(mid);
-      lwcSeries.candles.setMarkers([{
-        time: t0,
-        position: "aboveBar",
-        color: P.neon,
-        shape: "circle",
-        text: "NOW",
-      }]);
+      // EMA cross arrows on price + the NOW marker, one marker per timestamp
+      const uniq = new Map();
+      for (const e of (chart.ema_cross && chart.ema_cross.events) || []) {
+        if (e.pair === "20/200") continue;
+        const tt = toTime(e.t);
+        if (tt <= t0 && !uniq.has(tt)) uniq.set(tt, e);
+      }
+      const crossMarks = [...uniq.values()].slice(-18).map((e) => ({
+        time: toTime(e.t),
+        position: e.dir === "up" ? "belowBar" : "aboveBar",
+        color: e.dir === "up" ? P.neon : P.pink,
+        shape: e.dir === "up" ? "arrowUp" : "arrowDown",
+        text: "",
+      }));
+      const marks = crossMarks.concat([{ time: t0, position: "aboveBar", color: P.neon, shape: "circle", text: "NOW" }])
+        .sort((a, b) => a.time - b.time);
+      lwcSeries.candles.setMarkers(marks);
     } else {
       lwcSeries.coneUp.setData([]);
       lwcSeries.coneDown.setData([]);
@@ -323,145 +340,216 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
     }
   }
 
-  function drawRSI(data) {
-    const canvas = $("rsiChart");
-    const { ctx, w, h } = setupCanvas(canvas);
-    ctx.clearRect(0, 0, w, h);
-    const series = data.chart.rsi || [];
-    const padL = 8, padR = 8, padT = 10, padB = 14;
-    const plotW = w - padL - padR;
-    const plotH = h - padT - padB;
-    const xOf = (i) => padL + (i / Math.max(1, series.length - 1)) * plotW;
-    const yOf = (v) => padT + (1 - v / 100) * plotH;
+  // ==================================================================
+  // Indicator panels on Lightweight Charts, synced time axis + crosshair
+  // ==================================================================
+  function panelOptions(P) {
+    return {
+      autoSize: true,
+      layout: {
+        background: { type: "solid", color: "transparent" },
+        textColor: P.text,
+        fontFamily: getComputedStyle(document.body).fontFamily,
+        fontSize: 9,
+        attributionLogo: false,
+      },
+      grid: { vertLines: { color: "transparent" }, horzLines: { color: P.grid } },
+      rightPriceScale: { borderColor: P.line, entireTextOnly: true, scaleMargins: { top: 0.18, bottom: 0.18 } },
+      timeScale: { borderColor: P.line, timeVisible: true, secondsVisible: false, rightOffset: 4, barSpacing: 5 },
+      crosshair: {
+        mode: window.LightweightCharts.CrosshairMode.Normal,
+        vertLine: { color: P.crosshair, style: 2, labelBackgroundColor: C.text },
+        horzLine: { color: P.crosshair, style: 2, labelBackgroundColor: C.text },
+      },
+      localization: { priceFormatter: (v) => (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(2)) },
+    };
+  }
 
-    ctx.strokeStyle = C.grid;
-    ctx.lineWidth = 1;
-    [30, 50, 70].forEach((level) => {
-      const y = yOf(level);
-      ctx.strokeStyle = level === 50 ? C.gridStrong : C.grid;
-      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
-      ctx.fillStyle = C.dim;
-      ctx.font = "9px " + getComputedStyle(document.body).fontFamily;
-      ctx.textAlign = "left";
-      ctx.fillText(String(level), padL + 2, y - 2);
+  function applyPanelTheme(chart, P) {
+    chart.applyOptions({
+      layout: { textColor: P.text, fontFamily: getComputedStyle(document.body).fontFamily },
+      grid: { horzLines: { color: P.grid } },
+      rightPriceScale: { borderColor: P.line },
+      timeScale: { borderColor: P.line },
+      crosshair: {
+        vertLine: { color: P.crosshair, labelBackgroundColor: C.text },
+        horzLine: { color: P.crosshair, labelBackgroundColor: C.text },
+      },
     });
+  }
 
-    // fill under
-    ctx.beginPath();
-    let started = false;
-    for (let i = 0; i < series.length; i++) {
-      const v = series[i];
-      if (v === null) continue;
-      const x = xOf(i), y = yOf(v);
-      if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
-    }
-    if (started) {
-      ctx.lineTo(xOf(series.length - 1), padT + plotH);
-      ctx.lineTo(xOf(0), padT + plotH);
-      ctx.closePath();
-      const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
-      grad.addColorStop(0, "rgba(178,107,255,0.18)");
-      grad.addColorStop(1, "rgba(178,107,255,0)");
-      ctx.fillStyle = grad;
-      ctx.fill();
-    }
+  function registerSync(chart) {
+    if (chart.__synced) return;
+    chart.__synced = true;
+    lwcCharts.push(chart);
+    chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+      if (!range || lwcSyncGuard) return;
+      lwcSyncGuard = true;
+      for (const other of lwcCharts) {
+        if (other === chart) continue;
+        try { other.timeScale().setVisibleLogicalRange(range); } catch (e) { /* shorter series */ }
+      }
+      lwcSyncGuard = false;
+    });
+    chart.subscribeCrosshairMove((param) => {
+      if (lwcSyncGuard) return;
+      lwcSyncGuard = true;
+      for (const other of lwcCharts) {
+        if (other === chart) continue;
+        try {
+          if (param.time === undefined || !other.__main) { other.clearCrosshairPosition(); continue; }
+          const v = other.__values && other.__values.get(param.time);
+          if (v === undefined) other.clearCrosshairPosition();
+          else other.setCrosshairPosition(v, param.time, other.__main);
+        } catch (e) { /* chart without data */ }
+      }
+      lwcSyncGuard = false;
+    });
+  }
 
-    ctx.strokeStyle = C.purple;
-    ctx.lineWidth = 1.5;
-    ctx.shadowColor = C.purple;
-    ctx.shadowBlur = 8;
-    ctx.beginPath();
-    started = false;
-    for (let i = 0; i < series.length; i++) {
-      const v = series[i];
-      if (v === null) { started = false; continue; }
-      const x = xOf(i), y = yOf(v);
-      if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+  function ensurePanel(key, build) {
+    if (panelCharts[key]) return panelCharts[key];
+    const host = $(key + "Chart");
+    if (!host || !window.LightweightCharts) return null;
+    const P = lwcPalette();
+    const chart = window.LightweightCharts.createChart(host, panelOptions(P));
+    chart.__values = new Map();
+    chart.__lines = [];
+    panelCharts[key] = chart;
+    build(chart, P);
+    registerSync(chart);
+    return chart;
+  }
+
+  function seriesPoints(candles, values) {
+    const out = [];
+    for (let i = 0; i < values.length && i < candles.length; i++) {
+      const v = values[i];
+      if (v === null || v === undefined || !Number.isFinite(Number(v))) continue;
+      out.push({ time: toTime(candles[i].t), value: Number(v) });
     }
-    ctx.stroke();
-    ctx.shadowBlur = 0;
+    return out;
+  }
+
+  function drawRSI(data) {
+    const P = lwcPalette();
+    const chart = ensurePanel("rsi", (c, p) => {
+      c.__series = c.addAreaSeries({
+        lineColor: p.purple,
+        topColor: alpha(p.purple, 0.18),
+        bottomColor: alpha(p.purple, 0),
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        priceFormat: { type: "price", precision: 1, minMove: 0.1 },
+        autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 100 } }),
+      });
+      c.__main = c.__series;
+    });
+    if (!chart) return;
+    applyPanelTheme(chart, P);
+    const candles = data.chart.candles || [];
+    const pts = seriesPoints(candles, data.chart.rsi || []);
+    chart.__series.applyOptions({ lineColor: P.purple, topColor: alpha(P.purple, 0.18), bottomColor: alpha(P.purple, 0) });
+    chart.__series.setData(pts);
+    chart.__values = new Map(pts.map((pt) => [pt.time, pt.value]));
+    chart.__lines.forEach((l) => chart.__series.removePriceLine(l));
+    chart.__lines = [30, 50, 70].map((level) => chart.__series.createPriceLine({
+      price: level,
+      color: level === 50 ? P.lineStrong : P.line,
+      lineWidth: 1,
+      lineStyle: 2,
+      axisLabelVisible: false,
+      title: String(level),
+    }));
   }
 
   function drawMACD(data) {
-    const canvas = $("macdChart");
-    const { ctx, w, h } = setupCanvas(canvas);
-    ctx.clearRect(0, 0, w, h);
-    const line = data.chart.macd || [];
-    const sig = data.chart.macd_signal || [];
-    const hist = data.chart.macd_hist || [];
-    const padL = 8, padR = 8, padT = 10, padB = 14;
-    const plotW = w - padL - padR;
-    const plotH = h - padT - padB;
-    let min = Infinity, max = -Infinity;
-    for (const arr of [line, sig, hist]) {
-      for (const v of arr) {
-        if (v === null) continue;
-        if (v < min) min = v;
-        if (v > max) max = v;
-      }
-    }
-    if (!isFinite(min) || !isFinite(max)) { min = -1; max = 1; }
-    const pad = (max - min) * 0.1 || 1;
-    min -= pad; max += pad;
-    const xOf = (i) => padL + (i / Math.max(1, line.length - 1)) * plotW;
-    const yOf = (v) => padT + (1 - (v - min) / (max - min || 1)) * plotH;
-    const y0 = yOf(0);
-
-    ctx.strokeStyle = C.line;
-    ctx.beginPath(); ctx.moveTo(padL, y0); ctx.lineTo(w - padR, y0); ctx.stroke();
-
-    const bw = Math.max(1, (plotW / Math.max(1, hist.length)) * 0.55);
-    for (let i = 0; i < hist.length; i++) {
-      const v = hist[i];
-      if (v === null) continue;
-      const x = xOf(i);
-      const y = yOf(v);
-      ctx.fillStyle = v >= 0 ? alpha(C.neon, 0.55) : alpha(C.pink, 0.55);
-      ctx.fillRect(x - bw / 2, Math.min(y, y0), bw, Math.max(1, Math.abs(y - y0)));
-    }
-
-    const draw = (arr, color) => {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1.4;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 7;
-      ctx.beginPath();
-      let started = false;
-      for (let i = 0; i < arr.length; i++) {
-        const v = arr[i];
-        if (v === null) { started = false; continue; }
-        const x = xOf(i), y = yOf(v);
-        if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    };
-    draw(line, C.cyan);
-    draw(sig, C.pink);
+    const P = lwcPalette();
+    const chart = ensurePanel("macd", (c, p) => {
+      c.__hist = c.addHistogramSeries({ priceLineVisible: false, lastValueVisible: false, priceFormat: { type: "price", precision: 2, minMove: 0.01 } });
+      c.__line = c.addLineSeries({ color: p.cyan, lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+      c.__sig = c.addLineSeries({ color: p.pink, lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+      c.__main = c.__line;
+    });
+    if (!chart) return;
+    applyPanelTheme(chart, P);
+    const candles = data.chart.candles || [];
+    const hist = seriesPoints(candles, data.chart.macd_hist || [])
+      .map((pt) => ({ ...pt, color: pt.value >= 0 ? alpha(P.neon, 0.55) : alpha(P.pink, 0.55) }));
+    const line = seriesPoints(candles, data.chart.macd || []);
+    const sig = seriesPoints(candles, data.chart.macd_signal || []);
+    chart.__line.applyOptions({ color: P.cyan });
+    chart.__sig.applyOptions({ color: P.pink });
+    chart.__hist.setData(hist);
+    chart.__line.setData(line);
+    chart.__sig.setData(sig);
+    chart.__values = new Map(line.map((pt) => [pt.time, pt.value]));
+    chart.__lines.forEach((l) => chart.__line.removePriceLine(l));
+    chart.__lines = [chart.__line.createPriceLine({ price: 0, color: P.line, lineWidth: 1, lineStyle: 0, axisLabelVisible: false })];
   }
 
   function drawVolume(data) {
-    const canvas = $("volumeChart");
-    const { ctx, w, h } = setupCanvas(canvas);
-    ctx.clearRect(0, 0, w, h);
+    const P = lwcPalette();
+    const chart = ensurePanel("volume", (c) => {
+      c.__hist = c.addHistogramSeries({ priceLineVisible: false, lastValueVisible: false, priceFormat: { type: "volume" } });
+      c.__main = c.__hist;
+    });
+    if (!chart) return;
+    applyPanelTheme(chart, P);
     const candles = data.chart.candles || [];
     const vols = data.chart.volume || [];
-    const padL = 8, padR = 8, padT = 10, padB = 14;
-    const plotW = w - padL - padR;
-    const plotH = h - padT - padB;
-    const max = Math.max(...vols.filter((v) => Number.isFinite(v)), 1);
-    const bw = Math.max(1, (plotW / Math.max(1, vols.length)) * 0.6);
-    for (let i = 0; i < vols.length; i++) {
-      const k = candles[i];
-      if (!k) continue;
-      const x = padL + (i / Math.max(1, vols.length - 1)) * plotW;
-      const bh = (vols[i] / max) * plotH;
-      const up = k.c >= k.o;
-      ctx.fillStyle = up ? alpha(C.neon, 0.42) : alpha(C.pink, 0.42);
-      ctx.fillRect(x - bw / 2, padT + plotH - bh, bw, bh);
+    const pts = [];
+    const vals = new Map();
+    for (let i = 0; i < vols.length && i < candles.length; i++) {
+      const v = Number(vols[i]);
+      if (!Number.isFinite(v)) continue;
+      const time = toTime(candles[i].t);
+      const up = candles[i].c >= candles[i].o;
+      pts.push({ time, value: v, color: up ? alpha(P.neon, 0.45) : alpha(P.pink, 0.45) });
+      vals.set(time, v);
     }
-    ctx.strokeStyle = C.line;
-    ctx.beginPath(); ctx.moveTo(padL, padT + plotH); ctx.lineTo(w - padR, padT + plotH); ctx.stroke();
+    chart.__hist.setData(pts);
+    chart.__values = vals;
+  }
+
+  function drawEmaCross(data) {
+    const P = lwcPalette();
+    const chart = ensurePanel("emaCross", (c, p) => {
+      c.__p2050 = c.addLineSeries({ color: p.cyan, lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+      c.__p50200 = c.addLineSeries({ color: p.yellow, lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+      c.__main = c.__p2050;
+    });
+    if (!chart) return;
+    applyPanelTheme(chart, P);
+    const candles = data.chart.candles || [];
+    const cross = data.chart.ema_cross || {};
+    const a = seriesPoints(candles, cross.p2050 || []);
+    const b = seriesPoints(candles, cross.p50200 || []);
+    chart.__p2050.applyOptions({ color: P.cyan });
+    chart.__p50200.applyOptions({ color: P.yellow });
+    chart.__p2050.setData(a);
+    chart.__p50200.setData(b);
+    chart.__values = new Map(a.map((pt) => [pt.time, pt.value]));
+    chart.__lines.forEach((l) => chart.__p2050.removePriceLine(l));
+    chart.__lines = [chart.__p2050.createPriceLine({ price: 0, color: P.lineStrong, lineWidth: 1, lineStyle: 2, axisLabelVisible: false })];
+
+    const timesA = new Set(a.map((pt) => pt.time));
+    const timesB = new Set(b.map((pt) => pt.time));
+    const ev = Array.isArray(cross.events) ? cross.events : [];
+    const marks = (pair, set) => ev
+      .filter((e) => e.pair === pair && set.has(toTime(e.t)))
+      .slice(-24)
+      .map((e) => ({
+        time: toTime(e.t),
+        position: e.dir === "up" ? "belowBar" : "aboveBar",
+        color: e.dir === "up" ? P.neon : P.pink,
+        shape: e.dir === "up" ? "arrowUp" : "arrowDown",
+        text: "",
+      }))
+      .sort((x, y) => x.time - y.time);
+    chart.__p2050.setMarkers(marks("20/50", timesA));
+    chart.__p50200.setMarkers(marks("50/200", timesB));
   }
 
   function renderSignals(signals) {
@@ -480,7 +568,7 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
           <span class="signal-badge ${badgeCls}">${s.signal}</span>
         </div>
         <div class="signal-value">${s.value}</div>
-        <div class="signal-note">score ${s.score >= 0 ? "+" : ""}${s.score.toFixed(2)} · weight ${s.weight}</div>
+        <div class="signal-note">score ${s.score >= 0 ? "+" : ""}${s.score.toFixed(2)}${s.weight > 0 ? ` · weight ${s.weight}` : s.note ? ` · ${s.note}` : ""}</div>
       `;
       grid.appendChild(card);
     }
@@ -697,6 +785,15 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
     drawRSI(data);
     drawMACD(data);
     drawVolume(data);
+    drawEmaCross(data);
+    const ec = data.emaCross || {};
+    const crossTag = $("emaCrossTag");
+    if (crossTag) {
+      crossTag.textContent = ec.lastEvent
+        ? `${ec.label} · ${ec.lastEvent.pair} ${ec.lastEvent.dir === "up" ? "▲" : "▼"} ${shortDate(new Date(ec.lastEvent.t).toISOString().slice(0, 10))}`
+        : (ec.label || "--");
+      crossTag.style.color = ec.state === "bull" ? "var(--neon)" : ec.state === "bear" ? "var(--pink)" : "";
+    }
     setStatus("LIVE", true);
     showError(null);
   }

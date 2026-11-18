@@ -278,15 +278,24 @@
     <section class="grid-sub">
       <div class="panel mini-panel">
         <div class="panel-head"><span class="panel-title">RSI 14</span><span id="rsiTag" class="panel-tag">--</span></div>
-        <div class="canvas-wrap small"><canvas id="rsiChart"></canvas></div>
+        <div class="canvas-wrap small"><div id="rsiChart" class="chart-host"></div></div>
       </div>
       <div class="panel mini-panel">
         <div class="panel-head"><span class="panel-title">MACD 12/26/9</span><span id="macdTag" class="panel-tag">--</span></div>
-        <div class="canvas-wrap small"><canvas id="macdChart"></canvas></div>
+        <div class="canvas-wrap small"><div id="macdChart" class="chart-host"></div></div>
       </div>
       <div class="panel mini-panel">
         <div class="panel-head"><span class="panel-title">VOLUME</span><span id="volumeTag" class="panel-tag">--</span></div>
-        <div class="canvas-wrap small"><canvas id="volumeChart"></canvas></div>
+        <div class="canvas-wrap small"><div id="volumeChart" class="chart-host"></div></div>
+      </div>
+      <div class="panel mini-panel">
+        <div class="panel-head"><span class="panel-title">EMA CROSS</span><span id="emaCrossTag" class="panel-tag">--</span></div>
+        <div class="canvas-wrap small"><div id="emaCrossChart" class="chart-host"></div></div>
+        <div class="legend cross-legend">
+          <span><i class="sw sw-cyan"></i>20/50</span>
+          <span><i class="sw sw-yellow"></i>50/200</span>
+          <span class="cross-hint">&#9650; BUY &middot; &#9660; SELL</span>
+        </div>
       </div>
     </section>
 
