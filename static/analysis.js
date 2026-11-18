@@ -460,6 +460,10 @@ export function analyze(klines, ticker) {
     if (prev !== null) dir = macdHistV > prev ? 1 : macdHistV < prev ? -1 : dir;
     add("MACD histogram", macdHistV.toFixed(1), macdHistV > 0 ? "BULL" : "BEAR", dir, 1.2);
   }
+  if (macdV !== null) {
+    const s = macdV > 0 ? 0.8 : macdV < 0 ? -0.8 : 0;
+    add("MACD vs zero", macdV.toFixed(1), macdV > 0 ? "ABOVE" : "BELOW", s, 1);
+  }
   if (adxV !== null && plusDi !== null && minusDi !== null) {
     const s = adxV >= 25 ? (plusDi > minusDi ? 1 : -1) : 0;
     add("ADX / DI", `${adxV.toFixed(1)} / +${plusDi.toFixed(1)} -${minusDi.toFixed(1)}`, adxV >= 25 ? "TREND" : "RANGE", s, 1);
