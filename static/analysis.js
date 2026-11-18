@@ -539,6 +539,41 @@ export function analyze(klines, ticker) {
     add("Pivot", `P $${piv.p.toFixed(0)}`, s > 0 ? "ABOVE" : "BELOW", s, 0.4);
   }
 
+  if (atrV !== null && price) {
+    const atrPct = (atrV / price) * 100;
+    let s = 0;
+    let label = "NORMAL";
+    if (atrPct > 3) { s = -0.3; label = "HIGH VOL"; }
+    else if (atrPct < 1.5) { s = 0.3; label = "LOW VOL"; }
+    add("ATR 14", `${atrPct.toFixed(2)}%`, label, s, 0.5);
+  }
+  if (bbWidth !== null) {
+    const wHist = bb.width.filter((v) => v !== null);
+    const recentW = wHist.slice(-50);
+    const minW = Math.min(...recentW);
+    const maxW = Math.max(...recentW);
+    const rank = maxW > minW ? (bbWidth - minW) / (maxW - minW) : 0.5;
+    let s = 0;
+    let label = "NORMAL";
+    if (rank <= 0.2) { s = 0.4; label = "SQUEEZE"; }
+    else if (rank >= 0.8) { s = -0.2; label = "EXPANDING"; }
+    add("BB Width", `${bbWidth.toFixed(2)}%`, label, s, 0.6);
+  }
+  if (volumes.length >= 20) {
+    const volSma = sma(volumes, 20);
+    const volAvg = lastValid(volSma);
+    const lastVol = volumes[volumes.length - 1];
+    if (volAvg) {
+      const volRatio = lastVol / volAvg;
+      const bull = closes[closes.length - 1] >= closes[closes.length - 2];
+      let s = 0;
+      let label = "NORMAL";
+      if (volRatio > 1.5) { s = bull ? 0.5 : -0.5; label = "SURGE"; }
+      else if (volRatio < 0.6) { s = 0; label = "DRY"; }
+      add("Volume Ratio", `${volRatio.toFixed(2)}x`, label, s, 0.5);
+    }
+  }
+
   add(
     "EMA CROSS",
     emaCross.stack,
