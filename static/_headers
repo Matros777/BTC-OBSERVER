@@ -1,9 +1,6 @@
 /*
+  X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  X-Frame-Options: DENY
   Permissions-Policy: geolocation=(), microphone=(), camera=()
-
-/etf-live.json
-  Cache-Control: no-cache, must-revalidate
-  Access-Control-Allow-Origin: *
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-qXQVcdoONNpVsRmJaJ77sR9hVKEBdwAec0xkyXw+7sw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
