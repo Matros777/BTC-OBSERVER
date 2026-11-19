@@ -4,6 +4,7 @@ import { onRequestGet as klines } from "./functions/api/klines.js";
 import { onRequestGet as ticker } from "./functions/api/ticker.js";
 import { handleMcpRequest } from "./functions/_lib/mcp.js";
 import { readEtfLastGood } from "./functions/_lib/lastgood.js";
+import { fetchUpstreamDays } from "./functions/_lib/etf-source.js";
 
 // Security headers (applied to all JSON responses)
 const SECURITY_HEADERS = {
@@ -58,9 +59,15 @@ async function healthz(request, env) {
     }
   };
 
-  const [binance, cryptoetf] = await Promise.all([
+  // cryptoetf probe: run the real pipeline (6h edge cache → no quota burn when cached)
+  let cryptoetf = false;
+  try {
+    await fetchUpstreamDays();
+    cryptoetf = true;
+  } catch { /* upstream unreachable */ }
+
+  const [binance] = await Promise.all([
     probe("https://api.mexc.com/api/v3/ticker/price?symbol=BTCUSDT"),
-    probe("https://mcp.cryptoetf.today/api/mcp"),
   ]);
 
   let etfLastGoodAgeSec = null;
@@ -102,6 +109,15 @@ export default {
     if (path === "/api/ticker") return ticker({ request, env, ctx });
     if (path.startsWith("/api/")) return json({ error: "not found" }, 404);
 
-    return env.ASSETS.fetch(request);
+    // Static assets: re-emit with security + CSP headers (ASSETS binding does not set them)
+    const asset = await env.ASSETS.fetch(request);
+    if (!asset) return json({ error: "not found" }, 404);
+    const headers = new Headers(asset.headers);
+    headers.set("Content-Security-Policy", CSP);
+    headers.set("X-Frame-Options", "DENY");
+    headers.set("X-Content-Type-Options", "nosniff");
+    headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    headers.set("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+    return new Response(asset.body, { status: asset.status, statusText: asset.statusText, headers });
   },
 };
