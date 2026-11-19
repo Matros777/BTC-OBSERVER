@@ -65,8 +65,19 @@ for (const [name, args] of [
         .every((k) => data[k] !== undefined),
       Object.keys(data).join(","));
     step("report has no chart by default", data.chart === undefined);
+    step("report has schemaVersion", data.schemaVersion === 1);
   }
 }
+
+// Validation tests (P0 #1)
+const badKlines1 = await rpc({ jsonrpc: "2.0", id: 20, method: "tools/call", params: { name: "btc_klines", arguments: { interval: "2h", limit: 100 } } });
+step("btc_klines interval=2h → -32602", badKlines1.json?.error?.code === -32602, `code=${badKlines1.json?.error?.code}`);
+
+const badKlines2 = await rpc({ jsonrpc: "2.0", id: 21, method: "tools/call", params: { name: "btc_klines", arguments: { interval: "1h", limit: 9 } } });
+step("btc_klines limit=9 → -32602", badKlines2.json?.error?.code === -32602, `code=${badKlines2.json?.error?.code}`);
+
+const badKlines3 = await rpc({ jsonrpc: "2.0", id: 22, method: "tools/call", params: { name: "btc_klines", arguments: { interval: "1h", limit: 1001 } } });
+step("btc_klines limit=1001 → -32602", badKlines3.json?.error?.code === -32602, `code=${badKlines3.json?.error?.code}`);
 
 for (const [label, status, extra] of results) {
   console.log(`${status === "OK" ? "  PASS" : "  FAIL"}  ${label}${extra ? " — " + extra : ""}`);

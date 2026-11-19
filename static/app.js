@@ -74,6 +74,8 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
     if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(2) + "K";
     return n.toFixed(0);
   };
+  // XSS protection: escape HTML special chars in untrusted strings (upstream data)
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const cls = (v) => (v > 0 ? "up" : v < 0 ? "down" : "neutral");
   const timeLabel = (ms) => {
     const d = new Date(ms);
@@ -171,8 +173,9 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
     const idx = candles.findIndex((k) => toTime(k.t) === param.time);
     const vol = idx >= 0 ? (state.data.chart.volume || [])[idx] : null;
     const ema = param.seriesData.get(lwcSeries.ema20);
+    const timeStr = esc(new Date(Number(param.time) * 1000).toLocaleString("en-GB"));
     tip.innerHTML = `
-      <b>${new Date(Number(param.time) * 1000).toLocaleString("en-GB")}</b><br>
+      <b>${timeStr}</b><br>
       O ${fmtMoney(bar.open, 1)} · H ${fmtMoney(bar.high, 1)}<br>
       L ${fmtMoney(bar.low, 1)} · C <span class="${up ? "up" : "down"}">${fmtMoney(bar.close, 1)}</span><br>
       ${ema ? "EMA20 " + fmtMoney(ema.value, 1) + " · " : ""}${vol ? "VOL " + fmtCompact(vol) + " BTC" : ""}
@@ -564,11 +567,11 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
       const badgeCls = bull ? "bull" : bear ? "bear" : "neutral";
       card.innerHTML = `
         <div class="signal-top">
-          <span class="signal-name">${s.name}</span>
-          <span class="signal-badge ${badgeCls}">${s.signal}</span>
+          <span class="signal-name">${esc(s.name)}</span>
+          <span class="signal-badge ${badgeCls}">${esc(s.signal)}</span>
         </div>
-        <div class="signal-value">${s.value}</div>
-        <div class="signal-note">${s.weight > 0 ? `score ${s.score >= 0 ? "+" : ""}${s.score.toFixed(2)} · weight ${s.weight}` : (s.note || "")}</div>
+        <div class="signal-value">${esc(s.value)}</div>
+        <div class="signal-note">${s.weight > 0 ? `score ${s.score >= 0 ? "+" : ""}${s.score.toFixed(2)} · weight ${s.weight}` : (esc(s.note) || "")}</div>
       `;
       grid.appendChild(card);
     }
@@ -589,7 +592,7 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
       ["FIB 0.786", fib.levels["0.786"], ""],
     ];
     $("levels").innerHTML = rows.map(([k, v, c]) => `
-      <div class="level-row"><span class="k">${k}</span><span class="v ${c}">${fmtMoney(v, 0)}</span></div>
+      <div class="level-row"><span class="k">${esc(k)}</span><span class="v ${c}">${fmtMoney(v, 0)}</span></div>
     `).join("");
 
     const swingRows = [
@@ -599,7 +602,7 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
       ["PIVOT S1", piv.s1, "up"],
     ];
     $("swings").innerHTML = swingRows.map(([k, v, c]) => `
-      <div class="level-row"><span class="k">${k}</span><span class="v ${c}">${fmtMoney(v, 0)}</span></div>
+      <div class="level-row"><span class="k">${esc(k)}</span><span class="v ${c}">${fmtMoney(v, 0)}</span></div>
     `).join("");
   }
 
@@ -689,7 +692,7 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
     const days = $("etfDays");
     days.innerHTML = (etf.daily || []).slice(-10).map((r) => {
       const c = r.total > 0 ? "pos" : r.total < 0 ? "neg" : "neutral";
-      return `<div class="etf-day"><span class="d">${shortDate(r.date)}</span><span class="v ${c}">${fmtFlow(r.total)}</span></div>`;
+      return `<div class="etf-day"><span class="d">${esc(shortDate(r.date))}</span><span class="v ${c}">${fmtFlow(r.total)}</span></div>`;
     }).join("");
 
     drawEtfChart(etf);

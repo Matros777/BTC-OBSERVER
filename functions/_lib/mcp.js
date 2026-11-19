@@ -17,6 +17,22 @@ const SERVER_INFO = { name: "btc-observer", title: "BTC Observer", version: "1.0
 
 const ALLOWED_INTERVALS = ["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w"];
 
+// JSON-RPC 2.0 error codes
+const PARSE_ERROR = -32700;
+const INVALID_REQUEST = -32600;
+const METHOD_NOT_FOUND = -32601;
+const INVALID_PARAMS = -32602;
+const INTERNAL_ERROR = -32603;
+
+// Validation errors throw JsonRpcError with code -32602
+class JsonRpcError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.code = code;
+    this.name = "JsonRpcError";
+  }
+}
+
 const TOOLS = [
   {
     name: "btc_report",
@@ -122,16 +138,53 @@ async function run(handler, request, env, ctx, query = "") {
   return data;
 }
 
+// Validation helpers — throw JsonRpcError(-32602) on invalid params
+function validateKlines(args = {}) {
+  if (args.interval !== undefined && !ALLOWED_INTERVALS.includes(args.interval)) {
+    throw new JsonRpcError(INVALID_PARAMS, `interval must be one of: ${ALLOWED_INTERVALS.join(", ")}`);
+  }
+  if (args.limit !== undefined) {
+    if (!Number.isInteger(args.limit) || args.limit < 10 || args.limit > 1000) {
+      throw new JsonRpcError(INVALID_PARAMS, "limit must be an integer between 10 and 1000");
+    }
+  }
+}
+
+function validateReport(args = {}) {
+  if (args.include_chart !== undefined && typeof args.include_chart !== "boolean") {
+    throw new JsonRpcError(INVALID_PARAMS, "include_chart must be a boolean");
+  }
+  if (args.include_daily !== undefined && typeof args.include_daily !== "boolean") {
+    throw new JsonRpcError(INVALID_PARAMS, "include_daily must be a boolean");
+  }
+}
+
 function okTool(data) {
+  // Add schemaVersion for backward compatibility
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    data.schemaVersion = 1;
+  }
   return { content: [{ type: "text", text: JSON.stringify(data) }] };
 }
 
 async function dispatch(name, args, request, env, ctx) {
+  // Validate params BEFORE executing (protocol errors → JSON-RPC error response)
+  try {
+    if (name === "btc_klines") validateKlines(args);
+    if (name === "btc_report") validateReport(args);
+  } catch (e) {
+    if (e instanceof JsonRpcError) {
+      // Re-throw to be caught by outer try/catch and returned as proper JSON-RPC error
+      throw e;
+    }
+  }
+
   try {
     switch (name) {
       case "btc_report": {
         const data = await run(marketHandler, request, env, ctx);
-        if (!args.include_chart) delete data.chart;
+        // Default: no chart (large payload), include daily ETF rows
+        if (args.include_chart !== true) delete data.chart;
         if (args.include_daily === false && data.etf) delete data.etf.daily;
         return okTool(data);
       }
@@ -140,13 +193,14 @@ async function dispatch(name, args, request, env, ctx) {
       case "btc_etf":
         return okTool(await run(etfHandler, request, env, ctx));
       case "btc_klines": {
-        const interval = ALLOWED_INTERVALS.includes(args.interval) ? args.interval : "1h";
-        const limit = Math.min(Math.max(Math.round(Number(args.limit) || 100), 10), 1000);
-        return okTool(await run(klinesHandler, request, env, ctx, `interval=${interval}&limit=${limit}`));
+        const interval = args.interval || "1h";
+        const limit = args.limit !== undefined ? args.limit : 100;
+        return okTool(await run(klinesHandler, request, env, ctx, `interval=${encodeURIComponent(interval)}&limit=${limit}`));
       }
       case "btc_forecast": {
         const data = await run(marketHandler, request, env, ctx);
         return okTool({
+          schemaVersion: 1,
           symbol: data.symbol,
           price: data.price,
           composite: data.composite,
@@ -161,8 +215,12 @@ async function dispatch(name, args, request, env, ctx) {
         };
     }
   } catch (err) {
+    // Distinguish protocol errors (return JSON-RPC error) from execution errors (return isError: true)
+    if (err instanceof JsonRpcError) {
+      throw err; // Re-throw to outer handler for proper JSON-RPC error response
+    }
     return {
-      content: [{ type: "text", text: JSON.stringify({ error: String((err && err.message) || err) }) }],
+      content: [{ type: "text", text: JSON.stringify({ error: String((err && err.message) || err), schemaVersion: 1 }) }],
       isError: true,
     };
   }
@@ -230,9 +288,19 @@ export async function handleMcpRequest(request, env, ctx) {
       });
     case "tools/list":
       return mcpResp({ jsonrpc: "2.0", id, result: { tools: TOOLS } });
-    case "tools/call":
-      return mcpResp({ jsonrpc: "2.0", id, result: await dispatch(params.name, params.arguments || {}, request, env, ctx) });
+    case "tools/call": {
+      try {
+        const result = await dispatch(params.name, params.arguments || {}, request, env, ctx);
+        return mcpResp({ jsonrpc: "2.0", id, result });
+      } catch (err) {
+        if (err instanceof JsonRpcError) {
+          return mcpResp({ jsonrpc: "2.0", id, error: { code: err.code, message: err.message } });
+        }
+        // Unexpected error
+        return mcpResp({ jsonrpc: "2.0", id, error: { code: INTERNAL_ERROR, message: String(err && err.message ? err.message : err) } });
+      }
+    }
     default:
-      return mcpResp({ jsonrpc: "2.0", id, error: { code: -32601, message: `method not found: ${method}` } });
+      return mcpResp({ jsonrpc: "2.0", id, error: { code: METHOD_NOT_FOUND, message: `method not found: ${method}` } });
   }
 }
