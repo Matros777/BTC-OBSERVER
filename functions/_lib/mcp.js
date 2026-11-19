@@ -127,6 +127,34 @@ function authOk(request, env) {
   return bearer === key || request.headers.get("X-API-Key") === key;
 }
 
+// Simple per-IP rate limit for anonymous /mcp traffic, backed by the Workers
+// edge cache (caches.default) — same pattern as lastgood.js. Windowed counter:
+// one cache key per (IP, 60s window). Racing requests may undercount slightly;
+// that is acceptable for abuse protection (fail-open on cache errors).
+const RATE_LIMIT = 20; // requests per window per IP
+const RATE_WINDOW_MS = 60_000;
+
+async function rateLimitOk(request) {
+  if (typeof caches === "undefined" || !caches.default) return true;
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const windowIdx = Math.floor(Date.now() / RATE_WINDOW_MS);
+  const key = new Request(`https://btc-observer-cache.local/mcp-rl/${ip}/${windowIdx}`);
+  try {
+    const hit = await caches.default.match(key);
+    const count = hit ? Number((await hit.json()).n) || 0 : 0;
+    if (count >= RATE_LIMIT) return false;
+    await caches.default.put(
+      key,
+      new Response(JSON.stringify({ n: count + 1 }), {
+        headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=120" },
+      })
+    );
+    return true;
+  } catch {
+    return true; // limiter must never break the API
+  }
+}
+
 // Run an existing GET handler with a synthetic request (same origin, optional query)
 // and return its parsed JSON body.
 async function run(handler, request, env, ctx, query = "") {
@@ -242,6 +270,17 @@ export async function handleMcpRequest(request, env, ctx) {
 
   if (request.method !== "POST") {
     return mcpResp({ error: "method not allowed" }, 405);
+  }
+
+  // Rate limit anonymous traffic; requests with a valid MCP_API_KEY bypass it.
+  const hasKey = Boolean(env && env.MCP_API_KEY);
+  if (!(hasKey && authOk(request, env))) {
+    if (!(await rateLimitOk(request))) {
+      return new Response(JSON.stringify({ error: "rate limit exceeded, retry in 60s" }), {
+        status: 429,
+        headers: { ...baseHeaders(), "Retry-After": "60" },
+      });
+    }
   }
 
   if (!authOk(request, env)) {
