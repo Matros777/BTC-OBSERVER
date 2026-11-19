@@ -29,6 +29,7 @@
 ## Links
 
 - Home: https://btc-observer.ivanbenks7-e96.workers.dev/
+- Guide (how to read the dashboard, signals, methodology): https://btc-observer.ivanbenks7-e96.workers.dev/guide.html
 - Sitemap: https://btc-observer.ivanbenks7-e96.workers.dev/sitemap.xml
 
 ## Disclaimer
