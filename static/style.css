@@ -789,3 +789,39 @@ canvas { display: block; width: 100%; height: 100%; }
 
 .cross-legend { gap: 12px; }
 .cross-hint { color: var(--dim); }
+
+/* ============================================================
+   SEO LAYER (static H1, semantic H2, noscript, footer links)
+   ============================================================ */
+.seo-h1 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text);
+  opacity: 0.9;
+}
+
+.panel-title { margin: 0; font-weight: 500; }
+
+.seo-noscript {
+  padding: 14px 16px;
+  border: 1px solid rgba(128, 128, 128, 0.25);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.seo-noscript p { margin: 0 0 8px; }
+.seo-noscript p:last-child { margin-bottom: 0; }
+
+.footer-links { display: flex; gap: 16px; align-items: center; }
+.footer-links a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+.footer-links a:hover { color: var(--text); }

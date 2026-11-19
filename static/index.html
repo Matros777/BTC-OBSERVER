@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark light">
-  <title>BTC Observer — Bitcoin ETF Flows, Technical Indicators &amp; Long/Short Signal</title>
+  <title>BTC Observer — Bitcoin ETF Flows &amp; Long/Short Signal</title>
   <meta name="description" content="Live BTC/USDT intelligence: 2-week spot Bitcoin ETF flows, 16+ technical indicators, 24h probabilistic forecast and a long/short signal in one cosmic dashboard.">
   <meta name="keywords" content="Bitcoin, BTC, BTCUSDT, Bitcoin ETF, ETF flows, IBIT, FBTC, technical analysis, RSI, MACD, Bollinger Bands, crypto dashboard, BTC forecast, long short signal, market data">
   <meta name="author" content="BTC Observer">
@@ -117,11 +117,18 @@
   </header>
 
   <main class="wrap">
+    <noscript>
+      <div class="seo-noscript">
+        <p>BTC Observer is a live Bitcoin market-intelligence dashboard: spot BTC/USDT price, 2-week spot Bitcoin ETF net flows with IBIT/FBTC breakdown, 16+ technical indicators (EMA 20/50/200, RSI 14, MACD, Bollinger Bands, ATR, Stochastic, ADX/DI, OBV, VWAP, CCI, Williams %R, MFI, ROC, Ichimoku, Fibonacci, Pivot Points), a 24-hour Monte Carlo probabilistic forecast and a composite long/short signal.</p>
+        <p>Public JSON API: /api/market, /api/etf, /api/klines, /api/ticker. MCP server for AI agents: /mcp (streamable HTTP; tools: btc_report, btc_price, btc_etf, btc_klines, btc_forecast). Data sources: MEXC/Binance public API and cryptoetf.today. Not financial advice.</p>
+      </div>
+    </noscript>
     <section class="hero">
       <div class="hero-left">
         <div class="eyebrow">BTC / USDT · 1H · LIVE</div>
+        <h1 class="seo-h1">BTC Observer — Bitcoin ETF Flows &amp; Long/Short Signal</h1>
         <div class="price-row">
-          <h1 id="price" class="price">$--</h1>
+          <div id="price" class="price" aria-label="Current BTC price">$--</div>
           <span id="change" class="change neutral">--%</span>
         </div>
         <div class="hero-stats">
@@ -145,7 +152,7 @@
     <section class="cosmic-grid">
       <div class="panel cosmic-panel">
         <div class="panel-head">
-          <span class="panel-title">SIGNAL LONG / SHORT</span>
+          <h2 class="panel-title">SIGNAL LONG / SHORT</h2>
           <span class="panel-tag">TECH + ETF · 2W</span>
         </div>
         <div class="cosmic-stage">
@@ -203,7 +210,7 @@
 
       <div class="panel etf-panel">
         <div class="panel-head">
-          <span class="panel-title">BTC ETF FLOWS · 2W</span>
+          <h2 class="panel-title">BTC ETF FLOWS · 2W</h2>
           <span class="panel-tag">FARSIDE · $M</span>
         </div>
         <div class="etf-top">
@@ -234,7 +241,7 @@
     <section class="grid-main">
       <div class="panel chart-panel">
         <div class="panel-head">
-          <span class="panel-title">PRICE ACTION</span>
+          <h2 class="panel-title">PRICE ACTION</h2>
           <span class="panel-tag">EMA 20 / 50 / 200 · BB 20,2</span>
         </div>
         <div class="canvas-wrap">
@@ -252,7 +259,7 @@
 
       <aside class="panel forecast-panel">
         <div class="panel-head">
-          <span class="panel-title">24H FORECAST</span>
+          <h2 class="panel-title">24H FORECAST</h2>
           <span class="panel-tag">MONTE CARLO</span>
         </div>
         <div class="forecast-main">
@@ -277,19 +284,19 @@
 
     <section class="grid-sub">
       <div class="panel mini-panel">
-        <div class="panel-head"><span class="panel-title">RSI 14</span><span id="rsiTag" class="panel-tag">--</span></div>
+        <div class="panel-head"><h2 class="panel-title">RSI 14</h2><span id="rsiTag" class="panel-tag">--</span></div>
         <div class="canvas-wrap small"><div id="rsiChart" class="chart-host"></div></div>
       </div>
       <div class="panel mini-panel">
-        <div class="panel-head"><span class="panel-title">MACD 12/26/9</span><span id="macdTag" class="panel-tag">--</span></div>
+        <div class="panel-head"><h2 class="panel-title">MACD 12/26/9</h2><span id="macdTag" class="panel-tag">--</span></div>
         <div class="canvas-wrap small"><div id="macdChart" class="chart-host"></div></div>
       </div>
       <div class="panel mini-panel">
-        <div class="panel-head"><span class="panel-title">VOLUME</span><span id="volumeTag" class="panel-tag">--</span></div>
+        <div class="panel-head"><h2 class="panel-title">VOLUME</h2><span id="volumeTag" class="panel-tag">--</span></div>
         <div class="canvas-wrap small"><div id="volumeChart" class="chart-host"></div></div>
       </div>
       <div class="panel mini-panel">
-        <div class="panel-head"><span class="panel-title">EMA CROSS</span><span id="emaCrossTag" class="panel-tag">--</span></div>
+        <div class="panel-head"><h2 class="panel-title">EMA CROSS</h2><span id="emaCrossTag" class="panel-tag">--</span></div>
         <div class="canvas-wrap small"><div id="emaCrossChart" class="chart-host"></div></div>
         <div class="legend cross-legend">
           <span><i class="sw sw-cyan"></i>20/50</span>
@@ -301,7 +308,7 @@
 
     <section class="panel indicators-panel">
       <div class="panel-head">
-        <span class="panel-title">TECHNICAL MATRIX</span>
+        <h2 class="panel-title">TECHNICAL MATRIX</h2>
         <span class="panel-tag" id="matrixCount">-- SIGNALS</span>
       </div>
       <div id="signalGrid" class="signal-grid"></div>
@@ -309,17 +316,24 @@
 
     <section class="grid-levels">
       <div class="panel">
-        <div class="panel-head"><span class="panel-title">KEY LEVELS</span><span class="panel-tag">FIB · PIVOT</span></div>
+        <div class="panel-head"><h2 class="panel-title">KEY LEVELS</h2><span class="panel-tag">FIB · PIVOT</span></div>
         <div id="levels" class="levels"></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><span class="panel-title">SWING MAP</span><span class="panel-tag">SUPPORT / RESISTANCE</span></div>
+        <div class="panel-head"><h2 class="panel-title">SWING MAP</h2><span class="panel-tag">SUPPORT / RESISTANCE</span></div>
         <div id="swings" class="levels"></div>
       </div>
     </section>
   </main>
 
   <footer class="footer">
+    <div class="footer-links">
+      <a href="/api/market">API</a>
+      <a href="/mcp">MCP</a>
+      <a href="/llms.txt">llms.txt</a>
+      <a href="/sitemap.xml">SITEMAP</a>
+      <a href="https://github.com/Matros777/BTC-OBSERVER" rel="noopener">GITHUB</a>
+    </div>
     <span>BTC // OBSERVER</span>
     <span>DATA: BINANCE PUBLIC API · 1H CANDLES</span>
     <span id="updated">UPDATED --</span>
