@@ -157,6 +157,25 @@ table.g-table {
 .g-anchor { color: var(--dim); text-decoration: none; margin-left: 6px; }
 .g-anchor:hover { color: var(--cyan); }
 
+/* --- language toggle (EN/RU) --- */
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 11px;
+  margin-right: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  transition: color 0.15s, border-color 0.15s;
+}
+.lang-toggle:hover { color: var(--text); border-color: var(--cyan); }
+
 @media (max-width: 720px) {
   .g-toc ol { columns: 1; }
   .g-h1 { font-size: 24px; }

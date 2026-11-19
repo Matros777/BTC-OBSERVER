@@ -1,20 +1,25 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Как читать BTC Observer — гид по сигналам (краткосрок и долгосрок)</title>
-  <meta name="description" content="Подробная документация BTC Observer: как читать каждую панель дашборда, 21 технический сигнал, ETF-потоки, прогноз Monte Carlo, методология краткосрочного и долгосрочного анализа.">
+  <title>How to Read BTC Observer — Signals Guide (Short &amp; Long Term)</title>
+  <meta name="description" content="BTC Observer documentation: how to read every dashboard panel, all 21 technical signals with weights, ETF flow verdicts, Monte Carlo forecast, and short-term vs long-term methodology.">
   <link rel="canonical" href="https://btc-observer.ivanbenks7-e96.workers.dev/guide">
+  <link rel="alternate" hreflang="en" href="https://btc-observer.ivanbenks7-e96.workers.dev/guide">
+  <link rel="alternate" hreflang="ru" href="https://btc-observer.ivanbenks7-e96.workers.dev/guide-ru">
+  <link rel="alternate" hreflang="x-default" href="https://btc-observer.ivanbenks7-e96.workers.dev/guide">
   <meta name="theme-color" content="#050507">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="BTC Observer">
-  <meta property="og:title" content="Как читать BTC Observer — гид по сигналам">
-  <meta property="og:description" content="Каждая панель дашборда, 21 технический сигнал с весами, ETF-вердикты, прогноз Monte Carlo и методология краткосрока и долгосрока.">
+  <meta property="og:title" content="How to Read BTC Observer — Signals Guide">
+  <meta property="og:description" content="Every dashboard panel, 21 weighted technical signals, ETF verdicts, Monte Carlo forecast and the short-term vs long-term methodology.">
   <meta property="og:url" content="https://btc-observer.ivanbenks7-e96.workers.dev/guide">
   <meta property="og:image" content="https://btc-observer.ivanbenks7-e96.workers.dev/og-image.png">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="ru_RU">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/guide.css">
@@ -30,6 +35,7 @@
       <span class="brand-sub">GUIDE</span>
     </a>
     <div class="top-right">
+      <a class="lang-toggle" href="/guide-ru" hreflang="ru" lang="ru" title="Переключить на русский">RU</a>
       <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch color theme" title="Dark / light theme">
         <span class="theme-toggle-icon" aria-hidden="true">☀</span>
         <span class="theme-toggle-label">LIGHT</span>
@@ -39,115 +45,115 @@
 
   <main class="guide-wrap">
     <section class="g-hero">
-      <div class="eyebrow">ДОКУМЕНТАЦИЯ · v1.0 · ОБНОВЛЕНО 2026-11-19</div>
-      <h1 class="g-h1">Как читать BTC Observer</h1>
-      <p class="g-lead">Полный гид по дашборду: что показывает каждая панель, как считаются сигналы, как читать анализ на <b>краткосрочную</b> (24 часа) и <b>долгосрочную</b> (1–3 месяца) перспективу. Все формулы и пороги — из реального кода движка, без маркетинговых округлений.</p>
+      <div class="eyebrow">DOCUMENTATION · v1.1 · UPDATED 2026-11-19</div>
+      <h1 class="g-h1">How to Read BTC Observer</h1>
+      <p class="g-lead">The complete guide to the dashboard: what every panel shows, how the signals are computed, and how to run the analysis for the <b>short term</b> (24 hours) and the <b>long term</b> (1–3 months). Every formula and threshold below is taken from the actual engine code — no marketing rounding.</p>
     </section>
 
     <div class="g-cards">
       <div class="panel g-card">
-        <h3>КРАТКОСРОК · 24H</h3>
-        <p>Composite (1H) + прогноз Monte Carlo + RSI/MACD + SHORT-дуга. Держим 1–3 дня.</p>
+        <h3>SHORT-TERM · 24H</h3>
+        <p>Composite (1H) + Monte Carlo forecast + RSI/MACD + the SHORT arc. Holding period 1–3 days.</p>
       </div>
       <div class="panel g-card gold">
-        <h3>ДОЛГОСРОК · 1–3M</h3>
-        <p>Дневной тренд (EMA200, MACD 1D) + неделя ETF-потоков + LONG-дуга. Горизонт месяца+.</p>
+        <h3>LONG-TERM · 1–3M</h3>
+        <p>Daily trend (EMA200, 1D MACD) + a week of ETF flows + the LONG arc. Horizon of a month or more.</p>
       </div>
       <div class="panel g-card red">
-        <h3>ЖЕЛЕЗНОЕ ПРАВИЛО</h3>
-        <p>Сигнал — это вероятность, не гарантия. Всегда стоп-лосс, всегда размер позиции по риску.</p>
+        <h3>IRON RULE</h3>
+        <p>A signal is a probability, not a promise. Always a stop-loss, always position sizing by risk.</p>
       </div>
     </div>
 
     <section class="panel g-toc">
-      <p class="g-toc-title">СОДЕРЖАНИЕ</p>
+      <p class="g-toc-title">TABLE OF CONTENTS</p>
       <ol>
-        <li><a href="#quick">Дашборд за 60 секунд</a></li>
-        <li><a href="#hero">Hero-панель: цена и 24H</a></li>
-        <li><a href="#composite">COMPOSITE SIGNAL (шкала)</a></li>
-        <li><a href="#cosmic">SIGNAL LONG / SHORT (космос)</a></li>
+        <li><a href="#quick">The dashboard in 60 seconds</a></li>
+        <li><a href="#hero">Hero panel: price &amp; 24H</a></li>
+        <li><a href="#composite">COMPOSITE SIGNAL (gauge)</a></li>
+        <li><a href="#cosmic">SIGNAL LONG / SHORT (cosmic dial)</a></li>
         <li><a href="#etf">BTC ETF FLOWS · 2W</a></li>
-        <li><a href="#price">PRICE ACTION (график цены)</a></li>
+        <li><a href="#price">PRICE ACTION (price chart)</a></li>
         <li><a href="#forecast">24H FORECAST (Monte Carlo)</a></li>
-        <li><a href="#mini">Мини-чарты: RSI / MACD / VOL / CROSS</a></li>
-        <li><a href="#matrix">TECHNICAL MATRIX: все 21 сигнал</a></li>
-        <li><a href="#levels">KEY LEVELS и SWING MAP</a></li>
-        <li><a href="#method">Методология: краткосрок vs долгосрок</a></li>
-        <li><a href="#scenarios">Типовые сценарии</a></li>
-        <li><a href="#limits">Ограничения модели</a></li>
-        <li><a href="#api">API и MCP для агентов</a></li>
+        <li><a href="#mini">Mini charts: RSI / MACD / VOL / CROSS</a></li>
+        <li><a href="#matrix">TECHNICAL MATRIX: all 21 signals</a></li>
+        <li><a href="#levels">KEY LEVELS &amp; SWING MAP</a></li>
+        <li><a href="#method">Methodology: short-term vs long-term</a></li>
+        <li><a href="#scenarios">Typical scenarios</a></li>
+        <li><a href="#limits">Model limitations</a></li>
+        <li><a href="#api">API &amp; MCP for agents</a></li>
       </ol>
     </section>
 
     <!-- 1 -->
     <section class="g-section" id="quick">
       <div class="panel g-prose">
-        <div class="panel-head"><h2 class="panel-title">1 · ДАШБОРД ЗА 60 СЕКУНД</h2><span class="panel-tag">БЫСТРЫЙ СТАРТ</span></div>
-        <p>Маршрут чтения сверху вниз — за минуту складывается полное мнение о рынке:</p>
+        <div class="panel-head"><h2 class="panel-title">1 · THE DASHBOARD IN 60 SECONDS</h2><span class="panel-tag">QUICK START</span></div>
+        <p>Read top to bottom — in a minute you have a full opinion on the market:</p>
         <ol>
-          <li><b>Hero-панель</b> — текущая цена, 24H high/low, объём. Где мы сейчас.</li>
-          <li><b>COMPOSITE SIGNAL</b> — техническая картина 1H одним числом от −100 до +100.</li>
-          <li><b>SIGNAL LONG / SHORT</b> — космический круг: внешняя дуга = долгосрок (1–3M), внутренняя = краткосрок (24H). Вердикт в центре.</li>
-          <li><b>BTC ETF FLOWS</b> — куда деньги институционалов за 2 недели. Net flow, IBIT/FBTC, вердикт последнего дня.</li>
-          <li><b>24H FORECAST</b> — вероятностный коридор на завтра: медиана, P10/P90, шанс роста.</li>
-          <li><b>TECHNICAL MATRIX</b> — расшифровка, <i>почему</i> сигнал такой: 21 индикатор с оценками.</li>
-          <li><b>KEY LEVELS</b> — где поддержки/сопротивления для стопов и тейков.</li>
+          <li><b>Hero panel</b> — current price, 24H high/low, volume. Where we are now.</li>
+          <li><b>COMPOSITE SIGNAL</b> — the 1H technical picture as a single number from −100 to +100.</li>
+          <li><b>SIGNAL LONG / SHORT</b> — the cosmic dial: outer arc = long term (1–3M), inner arc = short term (24H). Verdict in the center.</li>
+          <li><b>BTC ETF FLOWS</b> — where institutional money moved over 2 weeks. Net flow, IBIT/FBTC, last day's verdict.</li>
+          <li><b>24H FORECAST</b> — tomorrow's probabilistic corridor: median, P10/P90, chance of being up.</li>
+          <li><b>TECHNICAL MATRIX</b> — the <i>why</i> behind the signal: 21 indicators with scores.</li>
+          <li><b>KEY LEVELS</b> — where support/resistance sit, for stops and targets.</li>
         </ol>
-        <div class="g-note"><p><b>Главный принцип:</b> решение принимается по пересечению трёх слоёв — тренд (долгосрок), импульс (краткосрок), потоки (ETF). Когда все три смотрят в одну сторону — сигнал самый сильный. Когда расходятся — рынок в диапазоне, сокращаем размер или ждём.</p></div>
+        <div class="g-note"><p><b>Core principle:</b> decide where three layers intersect — trend (long term), impulse (short term), flows (ETF). When all three point the same way, the signal is at its strongest. When they disagree, the market is ranging — cut size or wait.</p></div>
       </div>
     </section>
 
     <!-- 2 -->
     <section class="g-section" id="hero">
       <div class="panel g-prose">
-        <div class="panel-head"><h2 class="panel-title">2 · HERO-ПАНЕЛЬ: ЦЕНА И 24H</h2><span class="panel-tag">SPOT · LIVE</span></div>
-        <p>Верхняя строка показывает спотовую цену BTC/USDT и её изменение за 24 часа (зелёный/красный процент). Под ценой — четыре метрики суток:</p>
+        <div class="panel-head"><h2 class="panel-title">2 · HERO PANEL: PRICE &amp; 24H</h2><span class="panel-tag">SPOT · LIVE</span></div>
+        <p>The top line shows the spot BTC/USDT price and its 24-hour change (green/red percent). Below the price — four daily metrics:</p>
         <ul>
-          <li><kbd>24H HIGH / 24H LOW</kbd> — границы последнего дня. Пробой high — импульс вверх; падение под low — паника/стоп-хант.</li>
-          <li><kbd>24H VOL</kbd> — объём в BTC. Сравнивайте с обычными днями: объёмный ход «настоящий», тонкий ход — зыбкий.</li>
-          <li><kbd>TRADES</kbd> — число сделок. Много сделок при среднем объёме = активность мелочи/ботов; мало сделок при большом объёме = крупные блоки.</li>
+          <li><kbd>24H HIGH / 24H LOW</kbd> — the last day's range. A break above the high is an impulse up; dropping under the low is panic / stop-hunt.</li>
+          <li><kbd>24H VOL</kbd> — volume in BTC. Compare with a normal day: a high-volume move is "real", a thin one is fragile.</li>
+          <li><kbd>TRADES</kbd> — number of trades. Many trades at average volume = retail/bot churn; few trades at high volume = large blocks.</li>
         </ul>
-        <p>Данные — публичный API MEXC (совместим с Binance) с фолбэком на Binance. Обновление каждые ~60 секунд, кэш 30 с.</p>
+        <p>Data comes from the public MEXC API (Binance-compatible) with a Binance fallback. Refresh every ~60 seconds, 30 s cache.</p>
       </div>
     </section>
 
     <!-- 3 -->
     <section class="g-section" id="composite">
       <div class="panel g-prose">
-        <div class="panel-head"><h2 class="panel-title">3 · COMPOSITE SIGNAL (ШКАЛА)</h2><span class="panel-tag">TECH · 1H</span></div>
-        <p>Это взвешенное голосование <b>20 технических индикаторов</b> на часовом таймфрейме (EMA CROSS — 21-й — идёт отдельной карточкой с нулевым весом). Каждый сигнал даёт оценку от −1 до +1, умноженную на свой вес:</p>
-        <span class="g-formula">composite = Σ(оценкаᵢ × весᵢ) / Σ(весᵢ) × 100   →   диапазон −100 … +100</span>
+        <div class="panel-head"><h2 class="panel-title">3 · COMPOSITE SIGNAL (GAUGE)</h2><span class="panel-tag">TECH · 1H</span></div>
+        <p>This is a weighted vote of <b>20 technical indicators</b> on the hourly timeframe (EMA CROSS — the 21st — sits in its own card with zero weight). Each signal contributes a score from −1 to +1 multiplied by its weight:</p>
+        <span class="g-formula">composite = Σ(scoreᵢ × weightᵢ) / Σ(weightᵢ) × 100   →   range −100 … +100</span>
         <div class="g-table-wrap"><table class="g-table">
-          <tr><th>Зона</th><th>Что значит</th><th>Действие-подсказка</th></tr>
-          <tr><td><span class="g-badge g-bull">≥ +60 STRONG BULLISH</span></td><td>Почти все индикаторы за рост</td><td>Тренд вверх; покупки на откатах</td></tr>
-          <tr><td><span class="g-badge g-bull">+25 … +60 BULLISH</span></td><td>Перевес быков</td><td>Лонги по тренду, осторожно</td></tr>
-          <tr><td><span class="g-badge g-neutral">−25 … +25 NEUTRAL</span></td><td>Баланс / рынок в диапазоне</td><td>Вне позиции или торговля от границ</td></tr>
-          <tr><td><span class="g-badge g-bear">−60 … −25 BEARISH</span></td><td>Перевес медведей</td><td>Шорты по тренду / защита лонгов</td></tr>
-          <tr><td><span class="g-badge g-bear">≤ −60 STRONG BEARISH</span></td><td>Массовая распродажа</td><td>Не ловить нож; ждать стабилизации</td></tr>
+          <tr><th>Zone</th><th>Meaning</th><th>Action hint</th></tr>
+          <tr><td><span class="g-badge g-bull">≥ +60 STRONG BULLISH</span></td><td>Almost everything votes up</td><td>Uptrend; buy the dips</td></tr>
+          <tr><td><span class="g-badge g-bull">+25 … +60 BULLISH</span></td><td>Bulls have the edge</td><td>Longs with the trend, carefully</td></tr>
+          <tr><td><span class="g-badge g-neutral">−25 … +25 NEUTRAL</span></td><td>Balanced / ranging market</td><td>Flat, or trade the range edges</td></tr>
+          <tr><td><span class="g-badge g-bear">−60 … −25 BEARISH</span></td><td>Bears have the edge</td><td>Shorts with the trend / protect longs</td></tr>
+          <tr><td><span class="g-badge g-bear">≤ −60 STRONG BEARISH</span></td><td>Broad sell-off</td><td>Don't catch the knife; wait for stabilization</td></tr>
         </table></div>
-        <p><b>CONFIDENCE (достоверность)</b> — не «вероятность роста», а насколько надёжно само голосование:</p>
-        <span class="g-formula">confidence = 35 + |composite| × 0.45 + min(ADX, 50) × 0.4   (× 0.8, если ADX &lt; 20; потолок 95%)</span>
-        <p>Логика: сильное единодушие (большой |composite|) и подтверждённый тренд (ADX ≥ 25) повышают доверие; при ADX &lt; 20 рынок боковой — сигнал режется на 20%.</p>
+        <p><b>CONFIDENCE</b> is not "probability of going up" — it's how trustworthy the vote itself is:</p>
+        <span class="g-formula">confidence = 35 + |composite| × 0.45 + min(ADX, 50) × 0.4   (× 0.8 if ADX &lt; 20; cap 95%)</span>
+        <p>The logic: strong unanimity (large |composite|) and a confirmed trend (ADX ≥ 25) raise trust; at ADX &lt; 20 the market is sideways and the signal is cut by 20%.</p>
       </div>
     </section>
 
     <!-- 4 -->
     <section class="g-section" id="cosmic">
       <div class="panel g-prose">
-        <div class="panel-head"><h2 class="panel-title">4 · SIGNAL LONG / SHORT (КОСМИЧЕСКИЙ КРУГ)</h2><span class="panel-tag">TECH + ETF</span></div>
-        <p>Центральный прибор. Смешивает технику и ETF-потоки в два горизонта. <b>Внешняя дуга — LONG 1-3M</b> (долгосрок), <b>внутренняя — SHORT 24H</b> (краткосрок). Точное название «SHORT» здесь = скор краткосрочного горизонта, а не «шортить».</p>
+        <div class="panel-head"><h2 class="panel-title">4 · SIGNAL LONG / SHORT (COSMIC DIAL)</h2><span class="panel-tag">TECH + ETF</span></div>
+        <p>The central instrument. It blends technicals and ETF flows into two horizons. <b>The outer arc is LONG 1-3M</b> (long term), <b>the inner one is SHORT 24H</b> (short term). "SHORT" here means the short-horizon score — not "shorting".</p>
         <span class="g-formula">SHORT 24H  = 0.65 × Composite(1H) + 0.35 × ETF score
 LONG  1-3M = 0.70 × Daily composite + 0.30 × ETF score
-OVERALL    = 0.5 × SHORT + 0.5 × LONG   → вердикт в центре</span>
-        <p>Дневной (longTerm) слой — это те же индикаторы, но на 1D-свечах: цена vs EMA200 (вес 1.5), EMA50 vs EMA200 «GOLDEN/DEATH» (1.5), дневной MACD (1.2), RSI 1D (1), 30-дневный ROC (1), ADX 1D (1). Пороги вердиктов: ≥ +50 STRONG BULLISH, ≥ +20 BULLISH, > −20 NEUTRAL, > −50 BEARISH, ниже — STRONG BEARISH.</p>
-        <p><b>Как читать комбинации:</b></p>
+OVERALL    = 0.5 × SHORT + 0.5 × LONG   → the verdict in the center</span>
+        <p>The daily (longTerm) layer is the same indicators on 1D candles: price vs EMA200 (weight 1.5), EMA50 vs EMA200 "GOLDEN/DEATH" (1.5), daily MACD (1.2), daily RSI (1), 30-day ROC (1), daily ADX (1). Verdict thresholds: ≥ +50 STRONG BULLISH, ≥ +20 BULLISH, &gt; −20 NEUTRAL, &gt; −50 BEARISH, below that — STRONG BEARISH.</p>
+        <p><b>How to read the combinations:</b></p>
         <ul>
-          <li>Обе дуги зелёные и веер <span class="g-badge g-bull">LONG</span> — устойчивый бычий режим; откаты — точки входа.</li>
-          <li>Обе красные — медвежий режим; лонги только скальпом, основная ставка — вне рынка или шорт по тренду.</li>
-          <li><b>LONG зелёный + SHORT красный</b> — бычий год с локальной просадкой: лучший день, чтобы доливаться по тренду, худший — чтобы паниковать.</li>
-          <li><b>LONG красный + SHORT зелёный</b> — отскок внутри медвежьего тренда: контртрендовые лонги — только скальп, не позиция.</li>
+          <li>Both arcs green and the fan <span class="g-badge g-bull">LONG</span> — a solid bull regime; dips are entries.</li>
+          <li>Both red — a bear regime; longs are scalp-only, the main stance is flat or trend shorts.</li>
+          <li><b>LONG green + SHORT red</b> — a bull year with a local drawdown: the best day to add on the trend, the worst day to panic.</li>
+          <li><b>LONG red + SHORT green</b> — a bounce inside a bear trend: counter-trend longs are scalps only, never a position.</li>
         </ul>
-        <p><kbd>CONFIDENCE</kbd> в центре — смесь достоверностей обоих слоёв и ETF-оценки.</p>
+        <p><kbd>CONFIDENCE</kbd> in the center blends the confidence of both layers and the ETF score.</p>
       </div>
     </section>
 
@@ -155,173 +161,173 @@ OVERALL    = 0.5 × SHORT + 0.5 × LONG   → вердикт в центре</sp
     <section class="g-section" id="etf">
       <div class="panel g-prose">
         <div class="panel-head"><h2 class="panel-title">5 · BTC ETF FLOWS · 2W</h2><span class="panel-tag">CRYPTOETF.TODAY · $M</span></div>
-        <p>Куда двигались деньги спотовых Bitcoin-ETF (США) за 10 торговых дней. Это «умные» институциональные потоки — самый весомый фундаментальный слой дашборда.</p>
+        <p>Where US spot Bitcoin ETF money moved over the last 10 trading days. This is "smart" institutional flow — the heaviest fundamental layer of the dashboard.</p>
         <ul>
-          <li><kbd>NET FLOW 2W</kbd> — сумма всех дней: сколько долларов вливилось (+) или вышло (−).</li>
-          <li><kbd>INFLOW / OUTFLOW</kbd> — отдельно притоки и оттоки; их соотношение показывает «толщину» каждой стороны.</li>
-          <li><kbd>GREEN / RED</kbd> — счёт дней притока против оттока.</li>
-          <li><kbd>IBIT NET / FBTC NET</kbd> — два флагмана (BlackRock и Fidelity). Их согласованность важнее общей суммы: рынок делает пара гигантов, а не хвост мелких.</li>
-          <li><kbd>WoW</kbd> — неделя к неделе: сумма последних 5 дней делённая на предыдущие 5. &gt; 1 — притоки усиливаются.</li>
-          <li><kbd>AVG/DAY</kbd> — средний поток за день; <kbd>PRESSURE</kbd> — во сколько раз он давит на эмиссию.</li>
+          <li><kbd>NET FLOW 2W</kbd> — the sum of all days: dollars in (+) or out (−).</li>
+          <li><kbd>INFLOW / OUTFLOW</kbd> — inflows and outflows separately; their ratio shows how "thick" each side is.</li>
+          <li><kbd>GREEN / RED</kbd> — the count of inflow days vs outflow days.</li>
+          <li><kbd>IBIT NET / FBTC NET</kbd> — the two flagships (BlackRock and Fidelity). Their agreement matters more than the total: the market is moved by the giant pair, not the small-fund tail.</li>
+          <li><kbd>WoW</kbd> — week over week: the last 5 days' sum divided by the previous 5. &gt; 1 — inflows are strengthening.</li>
+          <li><kbd>AVG/DAY</kbd> — average daily flow; <kbd>PRESSURE</kbd> — how many times it bears down on issuance.</li>
         </ul>
-        <div class="g-note"><p><b>Что такое PRESSURE:</b> майнеры и эмитенты выбрасывают на рынок порядка <b>450 BTC/день</b>. Панель пересчитывает это в доллары и показывает, во сколько раз средний ETF-поток перекрывает предложение. PRESSURE 2.0x при оттоках означает: спрос сжимается вдвое сильнее обычного предложения — фундаментально давит вниз.</p></div>
-        <p><b>Вердикты каждого дня</b> (видны в нижней строке дня и в поле LAST):</p>
+        <div class="g-note"><p><b>What PRESSURE means:</b> miners and issuers release roughly <b>450 BTC/day</b> onto the market. The panel converts that to dollars and shows how many times the average ETF flow outweighs the supply. PRESSURE 2.0x during outflows means demand is shrinking twice as fast as normal supply — fundamentally bearish.</p></div>
+        <p><b>Per-day verdicts</b> (visible in the day strip and the LAST field):</p>
         <div class="g-table-wrap"><table class="g-table">
-          <tr><th>Вердикт</th><th>Условие</th><th>Как читать</th></tr>
-          <tr><td><span class="g-badge g-bull">FLASH-BUY</span></td><td>total &gt; 0 и IBIT &gt; 0</td><td>Приток подтверждён BlackRock — настоящий спрос</td></tr>
-          <tr><td><span class="g-badge g-warn">FLASH-FAKE</span></td><td>total &gt; 0, но IBIT &lt; 0</td><td>«Плюс» сделан мелкими фондами, BlackRock продавал — слабый день</td></tr>
-          <tr><td><span class="g-badge g-neutral">YELLOW</span></td><td>−250 ≤ total &lt; 0</td><td>Умеренный отток — фон, не сигнал</td></tr>
-          <tr><td><span class="g-badge g-bear">RED</span></td><td>total &lt; −250 $M</td><td>Массовый выход — сильное медвежье давление</td></tr>
+          <tr><th>Verdict</th><th>Condition</th><th>How to read it</th></tr>
+          <tr><td><span class="g-badge g-bull">FLASH-BUY</span></td><td>total &gt; 0 and IBIT &gt; 0</td><td>Inflow confirmed by BlackRock — real demand</td></tr>
+          <tr><td><span class="g-badge g-warn">FLASH-FAKE</span></td><td>total &gt; 0 but IBIT &lt; 0</td><td>The "plus" was made by small funds while BlackRock sold — a weak day</td></tr>
+          <tr><td><span class="g-badge g-neutral">YELLOW</span></td><td>−250 ≤ total &lt; 0</td><td>Moderate outflow — background noise, not a signal</td></tr>
+          <tr><td><span class="g-badge g-bear">RED</span></td><td>total &lt; −250 $M</td><td>Mass exit — heavy bearish pressure</td></tr>
         </table></div>
-        <p><b>ETF SCORE</b> (входит в обе дуги космоса): 70% — средний поток относительно эмиссии, 30% — моментум (последние 3 дня против предыдущих 3). Пороги те же: ±20 NEUTRAL, ±50 STRONG. Панель берёт данные с cryptoetf.today; при недоступности — last-good снапшот из edge-кэша (до 30 дней, помечается <kbd>stale</kbd>).</p>
+        <p><b>The ETF SCORE</b> (feeding both cosmic arcs): 70% — average flow relative to issuance, 30% — momentum (last 3 days vs the previous 3). Thresholds as usual: ±20 NEUTRAL, ±50 STRONG. The panel pulls data from cryptoetf.today; if it's down, it falls back to a last-good snapshot from the edge cache (up to 30 days, flagged <kbd>stale</kbd>).</p>
       </div>
     </section>
 
     <!-- 6 -->
     <section class="g-section" id="price">
       <div class="panel g-prose">
-        <div class="panel-head"><h2 class="panel-title">6 · PRICE ACTION (ГРАФИК ЦЕНЫ)</h2><span class="panel-tag">EMA 20/50/200 · BB 20,2</span></div>
-        <p>Часовые свечи за последние 240 часов с наложенными линиями:</p>
+        <div class="panel-head"><h2 class="panel-title">6 · PRICE ACTION (PRICE CHART)</h2><span class="panel-tag">EMA 20/50/200 · BB 20,2</span></div>
+        <p>Hourly candles for the last 240 hours with overlays:</p>
         <ul>
-          <li><span class="g-badge g-neutral">EMA20</span> — короткий импульс. Цена выше растущей EMA20 = краткосрочный бычий уклон.</li>
-          <li><span class="g-badge g-neutral">EMA50</span> — рабочий тренд свинг-трейдера. Отбои от EMA50 в тренде — классические точки докупки.</li>
-          <li><span class="g-badge g-neutral">EMA200</span> — граница режима. Выше — бычий рынок, ниже — медвежий (на 1H это ~8 дней истории).</li>
-          <li><span class="g-badge g-neutral">BB</span> — полосы Боллинджера (20, 2σ). Касание верхней — перегрев, нижней — перепроданность; сужение — сжатие волатильности перед импульсом.</li>
-          <li><span class="g-badge g-neutral">24H FORECAST</span> — пунктирный веер: медианная траектория Monte Carlo на завтра.</li>
+          <li><span class="g-badge g-neutral">EMA20</span> — short impulse. Price above a rising EMA20 = short-term bullish lean.</li>
+          <li><span class="g-badge g-neutral">EMA50</span> — the swing trader's trend. Pullback bounces off EMA50 in a trend are classic add-on points.</li>
+          <li><span class="g-badge g-neutral">EMA200</span> — the regime border. Above — bull market, below — bear (on 1H that's ~8 days of history).</li>
+          <li><span class="g-badge g-neutral">BB</span> — Bollinger Bands (20, 2σ). Touching the upper band — overheated, the lower — oversold; a squeeze precedes an impulse.</li>
+          <li><span class="g-badge g-neutral">24H FORECAST</span> — the dotted fan: the median Monte Carlo path for tomorrow.</li>
         </ul>
-        <p>Стрелки <kbd>▲</kbd>/<kbd>▼</kbd> на графике — пересечения EMA (вверх = BUY, вниз = SELL). Вертикальный маркер NOW — текущий час.</p>
-        <div class="g-note gold"><p><b>Порядок линий = настрой рынка.</b> Стек «цена &gt; EMA20 &gt; EMA50 &gt; EMA200» — идеальный бычий порядок (см. карточку EMA CROSS, поле stack). Любое нарушение порядка — первый звонок смены режима.</p></div>
+        <p>Arrows <kbd>▲</kbd>/<kbd>▼</kbd> on the chart are EMA crosses (up = BUY, down = SELL). The vertical NOW marker is the current hour.</p>
+        <div class="g-note gold"><p><b>Line order = market stance.</b> The stack "price &gt; EMA20 &gt; EMA50 &gt; EMA200" is the perfect bullish order (see the EMA CROSS card, the stack field). Any break in that order is the first warning of a regime change.</p></div>
       </div>
     </section>
 
     <!-- 7 -->
     <section class="g-section" id="forecast">
       <div class="panel g-prose">
-        <div class="panel-head"><h2 class="panel-title">7 · 24H FORECAST (MONTE CARLO)</h2><span class="panel-tag">GBM · 1000 ПУТЕЙ</span></div>
-        <p>Вероятностная модель: геометрическое броуновское движение, калиброванное на последних 72 часах доходностей (дрейф μ) и 168 часах волатильности (σ, с подмесом наклона EMA20). Прогоняется 1000 траекторий по 24 часовых шага.</p>
+        <div class="panel-head"><h2 class="panel-title">7 · 24H FORECAST (MONTE CARLO)</h2><span class="panel-tag">GBM · 1000 PATHS</span></div>
+        <p>A probabilistic model: geometric Brownian motion calibrated on the last 72 hours of returns (drift μ) and 168 hours of volatility (σ, blended with the EMA20 slope). One thousand paths are simulated, 24 hourly steps each.</p>
         <ul>
-          <li><kbd>MEDIAN TARGET</kbd> — медиана всех финалов: центр ожиданий на 24h. <b>Это не цель и не прогноз цены</b>, а «середина распределения».</li>
-          <li><kbd>P10 / P90</kbd> — 10-й и 90-й перцентили. Реальный путь окажется в этом коридоре в ~80% случаев. Ширина коридора = честная мера неопределённости.</li>
-          <li><kbd>PROB. UP</kbd> — доля траекторий, закончивших выше текущей цены. 50% = монетка; 65%+ = заметный уклон вверх.</li>
-          <li><kbd>CONFIDENCE</kbd> — достоверность модели: 30 + |composite| × 0.4 + min(ADX,50) × 0.4, потолок 90%.</li>
-          <li><kbd>VOLATILITY</kbd> — ATR14 в % от цены: сколько рынок проходит за час. 0.5% = тихо, 2%+ = шторм.</li>
+          <li><kbd>MEDIAN TARGET</kbd> — the median of all final values: the center of expectations for 24h. <b>It is not a target and not a price prediction</b>, just the middle of the distribution.</li>
+          <li><kbd>P10 / P90</kbd> — the 10th and 90th percentiles. The real path lands inside this corridor ~80% of the time. Corridor width is the honest measure of uncertainty.</li>
+          <li><kbd>PROB. UP</kbd> — the share of paths ending above the current price. 50% = a coin flip; 65%+ = a noticeable upward lean.</li>
+          <li><kbd>CONFIDENCE</kbd> — the model's trust score: 30 + |composite| × 0.4 + min(ADX,50) × 0.4, capped at 90%.</li>
+          <li><kbd>VOLATILITY</kbd> — ATR14 as % of price: how far the market moves per hour. 0.5% = quiet, 2%+ = storm.</li>
         </ul>
-        <div class="g-note"><p><b>Правильное чтение:</b> не «медиана $64 200 — жду туда», а «80%-коридор $62 800–$65 500, шанс роста 58%». Торгуйте от границ коридора (P10 — зона риска для лонгов, P90 — для шортов), а медиану используйте только как направление уклона вместе с PROB. UP.</p></div>
+        <div class="g-note"><p><b>The right way to read it:</b> not "the median is $64,200 — I expect it there", but "the 80% corridor is $62,800–$65,500, chance of being up 58%". Trade from the corridor edges (P10 is the risk zone for longs, P90 for shorts), and use the median only as the direction of the lean, together with PROB. UP.</p></div>
       </div>
     </section>
 
     <!-- 8 -->
     <section class="g-section" id="mini">
       <div class="panel g-prose">
-        <div class="panel-head"><h2 class="panel-title">8 · МИНИ-ЧАРТЫ: RSI / MACD / VOLUME / EMA CROSS</h2><span class="panel-tag">4 ОКНА</span></div>
+        <div class="panel-head"><h2 class="panel-title">8 · MINI CHARTS: RSI / MACD / VOLUME / EMA CROSS</h2><span class="panel-tag">4 WINDOWS</span></div>
         <div class="g-table-wrap"><table class="g-table">
-          <tr><th>Окно</th><th>Как читать</th><th>Ключевые зоны</th></tr>
+          <tr><th>Window</th><th>How to read</th><th>Key zones</th></tr>
           <tr>
             <td>RSI 14</td>
-            <td>Импульс. Рост RSI при росте цены — здоровый тренд; дивергенция (цена выше, RSI ниже) — усталость.</td>
-            <td>&lt;30 <span class="g-badge g-bull">OVERSOLD</span> · &gt;70 <span class="g-badge g-bear">OVERBOUGHT</span> · 50 — разделитель</td>
+            <td>Momentum. RSI rising with price — a healthy trend; divergence (price higher, RSI lower) — exhaustion.</td>
+            <td>&lt;30 <span class="g-badge g-bull">OVERSOLD</span> · &gt;70 <span class="g-badge g-bear">OVERBOUGHT</span> · 50 — the divider</td>
           </tr>
           <tr>
             <td>MACD 12/26/9</td>
-            <td>Гистограмма = скорость тренда. Растущая гистограмма — разгон, сжимающаяся — выдыхание.</td>
-            <td>Выше нуля <span class="g-badge g-bull">BULL</span> · ниже <span class="g-badge g-bear">BEAR</span> · кросс сигнальной — смена импульса</td>
+            <td>The histogram = trend speed. A growing histogram — acceleration, a shrinking one — running out of steam.</td>
+            <td>Above zero <span class="g-badge g-bull">BULL</span> · below <span class="g-badge g-bear">BEAR</span> · a signal-line cross — momentum change</td>
           </tr>
           <tr>
             <td>VOLUME</td>
-            <td>Бары объёма с SMA20. Объём подтверждает цену: рост на росте — правда, рост на падении — разгрузка.</td>
-            <td>&gt;1.5× <span class="g-badge g-warn">SURGE</span> · &lt;0.6× <span class="g-badge g-neutral">DRY</span> (сухой рынок)</td>
+            <td>Volume bars with SMA20. Volume confirms price: a rally on rising volume is real, a rally on falling volume is distribution.</td>
+            <td>&gt;1.5× <span class="g-badge g-warn">SURGE</span> · &lt;0.6× <span class="g-badge g-neutral">DRY</span> (dry market)</td>
           </tr>
           <tr>
             <td>EMA CROSS</td>
-            <td>Спреды 20/50 (голубая) и 50/200 (жёлтая) относительно нуля. Выше нуля = быстрая EMA выше медленной.</td>
-            <td>Кросс 50/200 вверх <span class="g-badge g-bull">GOLDEN</span> · вниз <span class="g-badge g-bear">DEATH</span></td>
+            <td>The 20/50 (cyan) and 50/200 (yellow) spreads against zero. Above zero = the fast EMA is above the slow one.</td>
+            <td>50/200 crossing up <span class="g-badge g-bull">GOLDEN</span> · down <span class="g-badge g-bear">DEATH</span></td>
           </tr>
         </table></div>
-        <p>Карточка <kbd>EMA CROSS</kbd> показывает текущий стек (например <kbd>20&gt;50&gt;200</kbd>) и дату последнего события: «20/50 ▲ 12 Nov». Свежий GOLDEN-кросс + цена выше EMA200 — самый весомый долгосрочный бычий аргумент, и наоборот.</p>
+        <p>The <kbd>EMA CROSS</kbd> card shows the current stack (e.g. <kbd>20&gt;50&gt;200</kbd>) and the last event's date: "20/50 ▲ 12 Nov". A fresh GOLDEN cross + price above EMA200 is the strongest long-term bullish argument — and vice versa.</p>
       </div>
     </section>
 
     <!-- 9 -->
     <section class="g-section" id="matrix">
       <div class="panel g-prose">
-        <div class="panel-head"><h2 class="panel-title">9 · TECHNICAL MATRIX: ВСЕ 21 СИГНАЛОВ</h2><span class="panel-tag">РАСШИФРОВКА COMPOSITE</span></div>
-        <p>Матрица — это «протокол голосования». Каждая карточка: имя, значение, вердикт и вклад в итог (score × вес). Ниже — полный справочник из кода движка. Вес показывает, насколько сигнал двигает composite.</p>
+        <div class="panel-head"><h2 class="panel-title">9 · TECHNICAL MATRIX: ALL 21 SIGNALS</h2><span class="panel-tag">THE COMPOSITE DECODED</span></div>
+        <p>The matrix is the voting record. Every card: name, value, verdict and its contribution to the total (score × weight). Below is the full reference from the engine code. The weight shows how much a signal moves the composite.</p>
         <div class="g-table-wrap"><table class="g-table">
-          <tr><th>#</th><th>Сигнал</th><th>Вес</th><th>Правило чтения</th></tr>
-          <tr><td>1</td><td>Price vs EMA50</td><td class="num">1.2</td><td>Цена выше EMA50 → BULL (+1), ниже → BEAR (−1). Базовый фильтр направления.</td></tr>
-          <tr><td>2</td><td>EMA50 vs EMA200</td><td class="num">1.2</td><td>50 выше 200 → GOLDEN, ниже → DEATH. Режим рынка на 1H.</td></tr>
-          <tr><td>3</td><td>EMA20 slope</td><td class="num">1.0</td><td>Наклон EMA20 за 5 часов, %/2 = оценка. Разгон или затухание импульса.</td></tr>
-          <tr><td>4</td><td>MACD histogram</td><td class="num">1.2</td><td>Гистограмма выше нуля и растёт → BULL. Смотрит направление и динамику.</td></tr>
-          <tr><td>5</td><td>MACD vs zero</td><td class="num">1.0</td><td>Линия MACD над/под нулём. Грубый фильтр фазы рынка (±0.8).</td></tr>
-          <tr><td>6</td><td>ADX / DI</td><td class="num">1.0</td><td>ADX ≥ 25 = тренд (голосует за сторону +DI/−DI); ADX &lt; 25 = RANGE, голос 0.</td></tr>
+          <tr><th>#</th><th>Signal</th><th>Weight</th><th>Reading rule</th></tr>
+          <tr><td>1</td><td>Price vs EMA50</td><td class="num">1.2</td><td>Price above EMA50 → BULL (+1), below → BEAR (−1). The base direction filter.</td></tr>
+          <tr><td>2</td><td>EMA50 vs EMA200</td><td class="num">1.2</td><td>50 above 200 → GOLDEN, below → DEATH. The 1H market regime.</td></tr>
+          <tr><td>3</td><td>EMA20 slope</td><td class="num">1.0</td><td>EMA20 slope over 5 hours, %/2 = score. Impulse accelerating or fading.</td></tr>
+          <tr><td>4</td><td>MACD histogram</td><td class="num">1.2</td><td>Histogram above zero and rising → BULL. Tracks both direction and dynamics.</td></tr>
+          <tr><td>5</td><td>MACD vs zero</td><td class="num">1.0</td><td>The MACD line above/below zero. A coarse market-phase filter (±0.8).</td></tr>
+          <tr><td>6</td><td>ADX / DI</td><td class="num">1.0</td><td>ADX ≥ 25 = trend (votes with +DI/−DI); ADX &lt; 25 = RANGE, votes 0.</td></tr>
           <tr><td>7</td><td>RSI 14</td><td class="num">1.0</td><td>&lt;30 OVERSOLD (+1) · &gt;70 OVERBOUGHT (−1) · 50–70 BULLISH (+0.35) · 30–50 BEARISH (−0.35).</td></tr>
-          <tr><td>8</td><td>Stochastic</td><td class="num">0.8</td><td>K&lt;20 и K&gt;D → OVERSOLD CROSS (+1); K&gt;80 и K&lt;D → OVERBOUGHT CROSS (−1); иначе (K−D)/20.</td></tr>
-          <tr><td>9</td><td>ROC 12</td><td class="num">0.8</td><td>Скорость изменения за 12 часов; оценка = ROC/5, клампится в ±1.</td></tr>
-          <tr><td>10</td><td>OBV slope</td><td class="num">0.8</td><td>OBV растёт за 24 бара → ACCUMULATION (тихие покупки), падает → DISTRIBUTION.</td></tr>
-          <tr><td>11</td><td>Bollinger %B</td><td class="num">0.7</td><td>&lt;0 — под нижней полосой (+1, отбой); &gt;1 — над верхней (−1); внутри — позиция в канале.</td></tr>
-          <tr><td>12</td><td>Ichimoku</td><td class="num">0.7</td><td>Цена vs Kijun (±0.5) + Tenkan vs Kijun (±0.5). Двумерный осциллятор тренда.</td></tr>
-          <tr><td>13</td><td>VWAP 24h</td><td class="num">0.6</td><td>Цена выше дневного VWAP → покупатели платят дороже среднего (+0.5), ниже → продавцы (−0.5).</td></tr>
-          <tr><td>14</td><td>CCI 20</td><td class="num">0.6</td><td>&gt;100 OVERBOUGHT (−0.8) · &lt;−100 OVERSOLD (+0.8) · иначе нейтрален с уклоном.</td></tr>
-          <tr><td>15</td><td>Williams %R</td><td class="num">0.6</td><td>&lt;−80 OVERSOLD (+1) · &gt;−20 OVERBOUGHT (−1). Зеркало стохастика.</td></tr>
-          <tr><td>16</td><td>MFI 14</td><td class="num">0.6</td><td>RSI, взвешенный объёмом: &lt;20 OVERSOLD (+1) · &gt;80 OVERBOUGHT (−1).</td></tr>
-          <tr><td>17</td><td>BB Width</td><td class="num">0.6</td><td>Ширина полос в нижних 20% ранга за 50 баров → SQUEEZE (+0.4): жди импульс; в верхних 20% → EXPANDING (−0.2).</td></tr>
-          <tr><td>18</td><td>Pivot</td><td class="num">0.4</td><td>Цена выше классического Pivot P (+0.5), ниже (−0.5). Дневной инерционный фильтр.</td></tr>
-          <tr><td>19</td><td>ATR 14</td><td class="num">0.5</td><td>Волатильность в %: &gt;3% HIGH VOL (−0.3 — риск!), &lt;1.5% LOW VOL (+0.3).</td></tr>
-          <tr><td>20</td><td>Volume Ratio</td><td class="num">0.5</td><td>Последний объём / SMA20: &gt;1.5× SURGE (голосует за направление свечи), &lt;0.6× DRY (0).</td></tr>
-          <tr><td>21</td><td>EMA CROSS</td><td class="num">0*</td><td>Информационная карточка: стек, последний кросс. В composite не голосует (вес 0), но критична глазами.</td></tr>
+          <tr><td>8</td><td>Stochastic</td><td class="num">0.8</td><td>K&lt;20 and K&gt;D → OVERSOLD CROSS (+1); K&gt;80 and K&lt;D → OVERBOUGHT CROSS (−1); else (K−D)/20.</td></tr>
+          <tr><td>9</td><td>ROC 12</td><td class="num">0.8</td><td>Rate of change over 12 hours; score = ROC/5, clamped to ±1.</td></tr>
+          <tr><td>10</td><td>OBV slope</td><td class="num">0.8</td><td>OBV rising over 24 bars → ACCUMULATION (quiet buying), falling → DISTRIBUTION.</td></tr>
+          <tr><td>11</td><td>Bollinger %B</td><td class="num">0.7</td><td>&lt;0 — below the lower band (+1, bounce); &gt;1 — above the upper (−1); inside — position in the channel.</td></tr>
+          <tr><td>12</td><td>Ichimoku</td><td class="num">0.7</td><td>Price vs Kijun (±0.5) + Tenkan vs Kijun (±0.5). A two-dimensional trend oscillator.</td></tr>
+          <tr><td>13</td><td>VWAP 24h</td><td class="num">0.6</td><td>Price above the daily VWAP → buyers pay above average (+0.5), below → sellers (−0.5).</td></tr>
+          <tr><td>14</td><td>CCI 20</td><td class="num">0.6</td><td>&gt;100 OVERBOUGHT (−0.8) · &lt;−100 OVERSOLD (+0.8) · otherwise neutral with a lean.</td></tr>
+          <tr><td>15</td><td>Williams %R</td><td class="num">0.6</td><td>&lt;−80 OVERSOLD (+1) · &gt;−20 OVERBOUGHT (−1). A mirror of stochastic.</td></tr>
+          <tr><td>16</td><td>MFI 14</td><td class="num">0.6</td><td>Volume-weighted RSI: &lt;20 OVERSOLD (+1) · &gt;80 OVERBOUGHT (−1).</td></tr>
+          <tr><td>17</td><td>BB Width</td><td class="num">0.6</td><td>Band width in the bottom 20% of its 50-bar rank → SQUEEZE (+0.4): expect an impulse; top 20% → EXPANDING (−0.2).</td></tr>
+          <tr><td>18</td><td>Pivot</td><td class="num">0.4</td><td>Price above the classic Pivot P (+0.5), below (−0.5). The daily inertia filter.</td></tr>
+          <tr><td>19</td><td>ATR 14</td><td class="num">0.5</td><td>Volatility in %: &gt;3% HIGH VOL (−0.3 — risk!), &lt;1.5% LOW VOL (+0.3).</td></tr>
+          <tr><td>20</td><td>Volume Ratio</td><td class="num">0.5</td><td>Last volume / SMA20: &gt;1.5× SURGE (votes with the candle's direction), &lt;0.6× DRY (0).</td></tr>
+          <tr><td>21</td><td>EMA CROSS</td><td class="num">0*</td><td>An informational card: stack, last cross. Does not vote in the composite (weight 0), but is critical to the eye.</td></tr>
         </table></div>
-        <p><b>Как пользоваться:</b> открой матрицу и найди «самые тяжёлые» красные/зелёные карточки — это двигатели текущего вердикта. Если composite = +40, но его сделали только осцилляторы перепроданности, а EMA-фильтры красные — это не тренд, а отскок.</p>
+        <p><b>How to use it:</b> open the matrix and find the "heaviest" red/green cards — those are the engines of the current verdict. If composite = +40 but only oversold oscillators made it while the EMA filters are red — that's not a trend, that's a bounce.</p>
       </div>
     </section>
 
     <!-- 10 -->
     <section class="g-section" id="levels">
       <div class="panel g-prose">
-        <div class="panel-head"><h2 class="panel-title">10 · KEY LEVELS И SWING MAP</h2><span class="panel-tag">FIB · PIVOT · SWING</span></div>
-        <p>Панель уровней — карта, где ставить стопы и тейки.</p>
+        <div class="panel-head"><h2 class="panel-title">10 · KEY LEVELS &amp; SWING MAP</h2><span class="panel-tag">FIB · PIVOT · SWING</span></div>
+        <p>The levels panel is the map of where to place stops and targets.</p>
         <ul>
-          <li><kbd>RESISTANCE / SUPPORT</kbd> — экстремумы видимых свингов (max/min). Первая граница боя.</li>
-          <li><kbd>PIVOT P / R1 / S1</kbd> — классические дневные уровни от вчерашних H/L/C. Выше P — день бычий по инерции.</li>
-          <li><kbd>FIB 0.236–0.786</kbd> — уровни коррекции от последнего импульса. Откаты 0.382–0.5 в тренде — рабочие зоны входа; 0.618 — «золотая», её пробой отменяет импульс.</li>
-          <li><kbd>SWING MAP</kbd> — три последних свинг-хая (сопротивления сверху) и свинг-лоя (поддержки снизу). Пробой свинга с объёмом — подтверждение; ретест пробитого свинга — классическая точка входа.</li>
+          <li><kbd>RESISTANCE / SUPPORT</kbd> — the extremes of visible swings (max/min). The first battle lines.</li>
+          <li><kbd>PIVOT P / R1 / S1</kbd> — classic daily levels from yesterday's H/L/C. Above P — the day leans bullish by inertia.</li>
+          <li><kbd>FIB 0.236–0.786</kbd> — correction levels of the last impulse. Pullbacks of 0.382–0.5 in a trend are working entry zones; 0.618 is the "golden" one — losing it kills the impulse.</li>
+          <li><kbd>SWING MAP</kbd> — the last three swing highs (resistance above) and swing lows (support below). A swing break on volume is confirmation; a retest of a broken swing is the classic entry.</li>
         </ul>
-        <div class="g-note gold"><p><b>Стоп-лосс</b> ставится за ближайший свинг/S1 минус запас на ATR (не «на круглом числе»). <b>Тейк</b> — перед следующим уровнем из карты, а не после него.</p></div>
+        <div class="g-note gold"><p><b>Stop-loss</b> goes beyond the nearest swing/S1 minus an ATR-sized buffer (not "at the round number"). <b>The target</b> sits before the next level on the map, not after it.</p></div>
       </div>
     </section>
 
     <!-- 11 -->
     <section class="g-section" id="method">
       <div class="panel g-prose">
-        <div class="panel-head"><h2 class="panel-title">11 · МЕТОДОЛОГИЯ: КРАТКОСРОК vs ДОЛГОСРОК</h2><span class="panel-tag">ДВЕ СТРАТЕГИИ</span></div>
-        <p>Один дашборд читается двумя разными способами в зависимости от горизонта:</p>
+        <div class="panel-head"><h2 class="panel-title">11 · METHODOLOGY: SHORT-TERM vs LONG-TERM</h2><span class="panel-tag">TWO PLAYBOOKS</span></div>
+        <p>One dashboard is read two different ways depending on the horizon:</p>
         <div class="g-table-wrap"><table class="g-table">
-          <tr><th>Слой</th><th>КРАТКОСРОК · 24H</th><th>ДОЛГОСРОК · 1–3M</th></tr>
-          <tr><td>Главный индикатор</td><td>SHORT-дуга + Composite 1H</td><td>LONG-дуга + дневной composite</td></tr>
-          <tr><td>Тренд</td><td>EMA20/50, VWAP, Pivot</td><td>Цена vs EMA200, GOLDEN/DEATH (1D)</td></tr>
-          <tr><td>Импульс</td><td>MACD hist, RSI, Stochastic</td><td>Дневной MACD, 30D ROC</td></tr>
-          <tr><td>Объёмы/потоки</td><td>Volume Ratio, OBV</td><td>ETF net flow 2W, WoW, PRESSURE</td></tr>
-          <tr><td>Волатильность</td><td>ATR, BB Width (squeeze)</td><td>Режим ADX 1D</td></tr>
-          <tr><td>Прогноз</td><td>Monte Carlo 24H (P10/P90)</td><td>Не используется — фундамент важнее</td></tr>
-          <tr><td>Вход</td><td>Отбой от EMA20/VWAP или свинга</td><td>Ретест EMA50/200, GOLDEN-кросс</td></tr>
-          <tr><td>Стоп</td><td>За локальный свинг ± 1×ATR</td><td>За EMA200 или ключевой свинг недели</td></tr>
-          <tr><td>Тайминг выхода</td><td>Противоположный сигнал / RSI-экстрим</td><td>DEATH-кросс, слом LONG-дуги, ETF RED-серия</td></tr>
+          <tr><th>Layer</th><th>SHORT-TERM · 24H</th><th>LONG-TERM · 1–3M</th></tr>
+          <tr><td>Primary indicator</td><td>SHORT arc + Composite 1H</td><td>LONG arc + daily composite</td></tr>
+          <tr><td>Trend</td><td>EMA20/50, VWAP, Pivot</td><td>Price vs EMA200, GOLDEN/DEATH (1D)</td></tr>
+          <tr><td>Momentum</td><td>MACD hist, RSI, Stochastic</td><td>Daily MACD, 30D ROC</td></tr>
+          <tr><td>Volume/flows</td><td>Volume Ratio, OBV</td><td>ETF net flow 2W, WoW, PRESSURE</td></tr>
+          <tr><td>Volatility</td><td>ATR, BB Width (squeeze)</td><td>ADX 1D regime</td></tr>
+          <tr><td>Forecast</td><td>Monte Carlo 24H (P10/P90)</td><td>Not used — fundamentals matter more</td></tr>
+          <tr><td>Entry</td><td>Bounce off EMA20/VWAP or a swing</td><td>Retest of EMA50/200, GOLDEN cross</td></tr>
+          <tr><td>Stop</td><td>Beyond the local swing ± 1×ATR</td><td>Beyond EMA200 or the week's key swing</td></tr>
+          <tr><td>Exit timing</td><td>Opposite signal / RSI extreme</td><td>DEATH cross, a broken LONG arc, an ETF RED streak</td></tr>
         </table></div>
-        <p><b>Краткосрочный чеклист (перед сделкой на 1–3 дня):</b></p>
+        <p><b>The short-term checklist (before a 1–3 day trade):</b></p>
         <ol>
-          <li>Composite 1H в нужной зоне (≥ +25 для лонга / ≤ −25 для шорта)?</li>
-          <li>PROB. UP поддерживает направление (≥ 55%)? Коридор P10–P90 позволяет дойти до цели?</li>
-          <li>RSI не в экстриме против сделки (не покупай на 70+, не шорть на 30−)?</li>
-          <li>ATR &lt; 3% (рынок не штормит)? Volume Ratio не DRY?</li>
-          <li>ETF-фон не против (нет свежего RED)?</li>
-          <li>Стоп за свингом, риск ≤ 1–2% депозита?</li>
+          <li>Composite 1H in the right zone (≥ +25 for a long / ≤ −25 for a short)?</li>
+          <li>PROB. UP supports the direction (≥ 55%)? Does the P10–P90 corridor allow the target to be reached?</li>
+          <li>RSI not at an extreme against the trade (don't buy at 70+, don't short at 30−)?</li>
+          <li>ATR &lt; 3% (the market isn't storming)? Volume Ratio not DRY?</li>
+          <li>The ETF background isn't against you (no fresh RED)?</li>
+          <li>Stop beyond the swing, risk ≤ 1–2% of the account?</li>
         </ol>
-        <p><b>Долгосрочный чеклист (позиция на месяц+):</b></p>
+        <p><b>The long-term checklist (a month+ position):</b></p>
         <ol>
-          <li>Цена выше EMA200 (1D) и стек GOLDEN? Daily composite ≥ +20?</li>
-          <li>ETF net flow 2W положительный или растёт (WoW &gt; 1)? PRESSURE &gt; 1x на притоках?</li>
-          <li>IBIT и FBTC в согласии (нет FLASH-FAKE на ключевых днях)?</li>
-          <li>30D ROC положительный, ADX 1D ≥ 20?</li>
-          <li>Долгосрочный вход — на откате к EMA50/0.5 Fib, а не на вертикали.</li>
+          <li>Price above EMA200 (1D) and a GOLDEN stack? Daily composite ≥ +20?</li>
+          <li>ETF net flow 2W positive or rising (WoW &gt; 1)? PRESSURE &gt; 1x on inflows?</li>
+          <li>IBIT and FBTC in agreement (no FLASH-FAKE on the key days)?</li>
+          <li>30D ROC positive, ADX 1D ≥ 20?</li>
+          <li>Enter long-term on a pullback to EMA50/0.5 Fib — never on a vertical candle.</li>
         </ol>
       </div>
     </section>
@@ -329,45 +335,45 @@ OVERALL    = 0.5 × SHORT + 0.5 × LONG   → вердикт в центре</sp
     <!-- 12 -->
     <section class="g-section" id="scenarios">
       <div class="panel g-prose">
-        <div class="panel-head"><h2 class="panel-title">12 · ТИПОВЫЕ СЦЕНАРИИ</h2><span class="panel-tag">КОМБИНАЦИИ</span></div>
-        <p><b>1. Трендовый лонг.</b> Composite ≥ +40 · стек 20&gt;50&gt;200 · ADX ≥ 25 · ETF BULLISH · RSI 50–65. Действие: лонг на откате к EMA20/VWAP, стоп за свинг − 1×ATR, тейк у следующего сопротивления/SWING HIGH.</p>
-        <p><b>2. Перегрев в тренде.</b> Composite &gt; +30, но RSI &gt; 70 + BB %B &gt; 1 + Volume SURGE на последней свече. Действие: НЕ догонять. Ждать отката к EMA20/0.382 Fib; частичная фиксация у лонгов.</p>
-        <p><b>3. Разворот от дна.</b> RSI &lt; 30 + Stoch OVERSOLD CROSS + BB %B &lt; 0 + Volume DRY, а LONG-дуга ещё зелёная. Действие: контртрендовый лонг малым размером, стоп за минимум, цель — VWAP/EMA20.</p>
-        <p><b>4. Squeeze перед импульсом.</b> BB Width SQUEEZE + ADX &lt; 20 + DRY. Направление неизвестно — смотреть MACD hist и ETF-фон. Действие: узкий сжатый стоп в обе стороны после пробоя, или вне рынка до момента.</p>
-        <p><b>5. FLASH-FAKE.</b> День «+50 $M», но IBIT −100: приток сделан мелкими фондами при продажах BlackRock. Действие: не считать день бычьим; смотреть серию, а не один день.</p>
-        <p><b>6. Расхождение горизонтов.</b> LONG +40 / SHORT −30 (обвал в бычьем годе). Действие: если фундамент (ETF, EMA200) не сломан — это просадка для доливки, а не повод выходить. Обратное расхождение — отскок для выхода из лонгов, не для новых.</p>
+        <div class="panel-head"><h2 class="panel-title">12 · TYPICAL SCENARIOS</h2><span class="panel-tag">COMBINATIONS</span></div>
+        <p><b>1. Trend long.</b> Composite ≥ +40 · stack 20&gt;50&gt;200 · ADX ≥ 25 · ETF BULLISH · RSI 50–65. Action: long on a pullback to EMA20/VWAP, stop beyond the swing − 1×ATR, target at the next resistance/SWING HIGH.</p>
+        <p><b>2. Overheat in a trend.</b> Composite &gt; +30, but RSI &gt; 70 + BB %B &gt; 1 + Volume SURGE on the last candle. Action: do NOT chase. Wait for a pullback to EMA20/0.382 Fib; trim longs partially.</p>
+        <p><b>3. Reversal off the bottom.</b> RSI &lt; 30 + Stoch OVERSOLD CROSS + BB %B &lt; 0 + Volume DRY, while the LONG arc is still green. Action: a small counter-trend long, stop beyond the low, target VWAP/EMA20.</p>
+        <p><b>4. Squeeze before an impulse.</b> BB Width SQUEEZE + ADX &lt; 20 + DRY. Direction unknown — watch the MACD hist and the ETF background. Action: a tight two-sided stop after the break, or stay out until it fires.</p>
+        <p><b>5. FLASH-FAKE.</b> A "+50 $M" day with IBIT at −100: the inflow was made by small funds while BlackRock sold. Action: don't count the day as bullish; watch the streak, not a single day.</p>
+        <p><b>6. Horizons disagree.</b> LONG +40 / SHORT −30 (a crash in a bull year). Action: if the fundamentals (ETF, EMA200) aren't broken, this is a dip to add on, not a reason to exit. The reverse split is a bounce to exit longs into, not to open new ones.</p>
       </div>
     </section>
 
     <!-- 13 -->
     <section class="g-section" id="limits">
       <div class="panel g-prose">
-        <div class="panel-head"><h2 class="panel-title">13 · ОГРАНИЧЕНИЯ МОДЕЛИ</h2><span class="panel-tag">ЧЕСТНО</span></div>
-        <p>Дашборд — это техника и потоки. Он <b>не видит</b>:</p>
+        <div class="panel-head"><h2 class="panel-title">13 · MODEL LIMITATIONS</h2><span class="panel-tag">HONESTY</span></div>
+        <p>The dashboard is technicals and flows. It <b>cannot see</b>:</p>
         <ul>
-          <li>Новости, регуляторные решения, хаки, листинги/делистинги;</li>
-          <li>Ликвидации и каскады на деривативах (open interest, funding rate);</li>
-          <li>Крупные ордера «китов» вне ETF-канала;</li>
-          <li>Макро (ставки, индексы, доллар) и корреляции с другими активами;</li>
-          <li>События по расписанию (экспирации опционов, апдейты сети).</li>
+          <li>News, regulatory decisions, hacks, listings/delistings;</li>
+          <li>Liquidations and derivative cascades (open interest, funding rate);</li>
+          <li>Large "whale" orders outside the ETF channel;</li>
+          <li>Macro (rates, indices, the dollar) and correlations with other assets;</li>
+          <li>Scheduled events (option expiries, network upgrades).</li>
         </ul>
-        <div class="g-note red"><p><b>Дисклеймер.</b> Все сигналы вероятностные, исторические данные не гарантируют будущего. Monte Carlo предполагает случайные приращения — резкие режимные сдвиги он не предсказывает. Ничто на сайте не является финансовым советом. Решения и риск — только ваши.</p></div>
+        <div class="g-note red"><p><b>Disclaimer.</b> All signals are probabilistic; historical data does not guarantee the future. Monte Carlo assumes random increments — it does not predict sharp regime shifts. Nothing on this site is financial advice. Decisions and risk are yours alone.</p></div>
       </div>
     </section>
 
     <!-- 14 -->
     <section class="g-section" id="api">
       <div class="panel g-prose">
-        <div class="panel-head"><h2 class="panel-title">14 · API И MCP ДЛЯ АГЕНТОВ</h2><span class="panel-tag">MACHINE-READABLE</span></div>
-        <p>Все данные дашборда доступны программно — удобно для агентов, ботов и исследований:</p>
+        <div class="panel-head"><h2 class="panel-title">14 · API &amp; MCP FOR AGENTS</h2><span class="panel-tag">MACHINE-READABLE</span></div>
+        <p>Everything on the dashboard is available programmatically — handy for agents, bots and research:</p>
         <ul>
-          <li><kbd>GET /api/market</kbd> — всё: цена, индикаторы, 21 сигнал, composite, прогноз, уровни, ETF, longTerm.</li>
-          <li><kbd>GET /api/etf</kbd> · <kbd>GET /api/ticker</kbd> · <kbd>GET /api/klines?interval=1h&limit=500</kbd> — по частям.</li>
-          <li><kbd>GET /healthz</kbd> — статус апстримов (uptime-проба).</li>
-          <li><kbd>POST /mcp</kbd> — MCP-сервер (streamable HTTP): инструменты btc_report, btc_price, btc_etf, btc_klines, btc_forecast. Лимит 20 запросов/мин на IP.</li>
-          <li><kbd>/llms.txt</kbd> — машиночитаемое описание сайта для LLM.</li>
+          <li><kbd>GET /api/market</kbd> — everything: price, indicators, 21 signals, composite, forecast, levels, ETF, longTerm.</li>
+          <li><kbd>GET /api/etf</kbd> · <kbd>GET /api/ticker</kbd> · <kbd>GET /api/klines?interval=1h&limit=500</kbd> — piece by piece.</li>
+          <li><kbd>GET /healthz</kbd> — upstream status (uptime probe).</li>
+          <li><kbd>POST /mcp</kbd> — an MCP server (streamable HTTP): the btc_report, btc_price, btc_etf, btc_klines, btc_forecast tools. Rate limit 20 req/min per IP.</li>
+          <li><kbd>/llms.txt</kbd> — a machine-readable description of the site for LLMs.</li>
         </ul>
-        <p>Поле <kbd>schemaVersion</kbd> в ответах — маркер совместимости. Кэш 30 с; не долбите чаще — увидите <kbd>429</kbd>.</p>
+        <p>The <kbd>schemaVersion</kbd> field in responses is a compatibility marker. Cache is 30 s; don't hammer it — you'll see <kbd>429</kbd>.</p>
       </div>
     </section>
   </main>
