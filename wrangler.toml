@@ -5,7 +5,3 @@ compatibility_date = "2026-11-17"
 [assets]
 directory = "./static"
 binding = "ASSETS"
-
-[[kv_namespaces]]
-binding = "CACHE"
-id = "btc-observer-cache"

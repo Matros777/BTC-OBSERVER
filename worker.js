@@ -3,8 +3,9 @@ import { onRequestGet as etf } from "./functions/api/etf.js";
 import { onRequestGet as klines } from "./functions/api/klines.js";
 import { onRequestGet as ticker } from "./functions/api/ticker.js";
 import { handleMcpRequest } from "./functions/_lib/mcp.js";
+import { readEtfLastGood } from "./functions/_lib/lastgood.js";
 
-// Security headers (applied to all responses)
+// Security headers (applied to all JSON responses)
 const SECURITY_HEADERS = {
   "X-Frame-Options": "DENY",
   "X-Content-Type-Options": "nosniff",
@@ -12,11 +13,18 @@ const SECURITY_HEADERS = {
   "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
 };
 
-// CSP hash for inline theme script in index.html (computed via: sed -n '/<script>/,/<\/script>/p' index.html | sed '1d;$d' | openssl dgst -sha256 -binary | openssl base64)
-// Updated: 2026-11-19 — hash of the theme toggle script
-const CSP_HASH = "sha256-dGZgeyRdH8K3qM+qJvLzN8y9m5v8xW2bQ4cR6tY7uI0=";
+// CSP: inline theme script in index.html, hash computed 2026-11-19:
+//   sed -n '/<script>/,/<\/script>/p' static/index.html | sed '1d;$d' | openssl dgst -sha256 -binary | openssl base64
+// Re-run this when the inline script changes. JSON-LD blocks are non-scriptable and unrestricted.
+const CSP_HASH = "sha256-qXQVcdoONNpVsRmJaJ77sR9hVKEBdwAec0xkyXw+7sw=";
 
-const CSP = `default-src 'self'; script-src 'self' '${CSP_HASH}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://api.binance.com https://data-api.binance.vision https://api.mexc.com https://cryptoetf.today; frame-ancestors 'none'; base-uri 'self'; form-action 'none'`;
+const CSP =
+  `default-src 'self'; ` +
+  `script-src 'self' '${CSP_HASH}'; ` +
+  `style-src 'self' 'unsafe-inline'; ` + // dynamic chart styles
+  `img-src 'self' data: blob:; ` +
+  `connect-src 'self'; ` +
+  `frame-ancestors 'none'; base-uri 'self'; form-action 'none'`;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -56,14 +64,10 @@ async function healthz(request, env) {
   ]);
 
   let etfLastGoodAgeSec = null;
-  if (env && env.CACHE) {
-    try {
-      const lg = await env.CACHE.get("etf:lastgood", "json");
-      if (lg && lg.fetchedAt) {
-        etfLastGoodAgeSec = Math.floor((Date.now() - lg.fetchedAt) / 1000);
-      }
-    } catch { /* ignore */ }
-  }
+  try {
+    const lg = await readEtfLastGood();
+    if (lg && lg.fetchedAt) etfLastGoodAgeSec = Math.floor((Date.now() - lg.fetchedAt) / 1000);
+  } catch { /* ignore */ }
 
   const ok = binance && (cryptoetf || etfLastGoodAgeSec !== null);
 
