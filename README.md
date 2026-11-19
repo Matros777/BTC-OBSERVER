@@ -62,6 +62,39 @@ sudo ufw allow from 192.168.216.0/24 to any port 8787 proto tcp
 - `GET /api/market` — цена, индикаторы, сигналы, прогноз, ETF, long-term
 - `GET /api/etf` — 2-недельный ETF-срез
 - `GET /api/ticker` — 24h тикер Binance
+- `POST /mcp` — MCP-сервер для агентов (см. ниже)
+
+## MCP-сервер (для агентов)
+
+Встроен в Worker на `POST /mcp` (MCP streamable HTTP, JSON-RPC 2.0, без сессий и SSE).
+Один вызов `btc_report` вытаскивает весь снимок рынка вместо N запросов к API.
+
+Инструменты:
+
+- `btc_report` — полный снимок: цена, 24h тикер, индикаторы, 21 сигнал, композит, EMA cross,
+  прогноз Monte Carlo 24h, уровни (фиб/пивоты/свинги), ETF 2W, long-term.
+  Параметры: `include_chart` (240 1h-свечей, по умолчанию false), `include_daily` (ETF по дням, default true)
+- `btc_price` — цена и 24h тикер
+- `btc_etf` — ETF-потоки 2W
+- `btc_klines` — сырые OHLCV, `interval` (1m…1w, default 1h), `limit` (10–1000, default 100)
+- `btc_forecast` — прогноз 24h + контекст (композит, EMA cross)
+
+Подключение в OpenCode:
+
+```sh
+opencode mcp add btc-observer --global --url https://btc-observer.ivanbenks7-e96.workers.dev/mcp
+```
+
+Защита (опционально): записать секрет `MCP_API_KEY` в Worker
+(`npx wrangler secret put MCP_API_KEY`) — тогда запросы без
+`Authorization: Bearer <key>` (или `X-API-Key: <key>`) получат 401.
+Без секрета эндпоинт публичный, как остальные /api.
+
+Локальный smoke-тест без деплоя:
+
+```sh
+node scripts/mcp_test.mjs
+```
 
 ## SEO / social / AI
 
@@ -85,7 +118,7 @@ sudo ufw allow from 192.168.216.0/24 to any port 8787 proto tcp
 - Build command: `npm run build`
 - Deploy command: `npx wrangler deploy`
 - Root directory: `/`
-- API: `/api/market`, `/api/etf`, `/api/klines`, `/api/ticker`
+- API: `/api/market`, `/api/etf`, `/api/klines`, `/api/ticker`, `/mcp` (MCP-сервер для агентов)
 - Индикаторы считаются в браузере; Worker только отдаёт свечи/тикер и статику
 - Данные: MEXC (Binance-compatible) → `data-api.binance.vision` → `api.binance.com` fallback
 - ETF-сид 2W встроен в `static/etf.js` (его же импортирует Worker), живые дни — в `static/etf-live.json`

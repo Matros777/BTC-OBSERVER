@@ -2,6 +2,7 @@ import { onRequestGet as market } from "./functions/api/market.js";
 import { onRequestGet as etf } from "./functions/api/etf.js";
 import { onRequestGet as klines } from "./functions/api/klines.js";
 import { onRequestGet as ticker } from "./functions/api/ticker.js";
+import { handleMcpRequest } from "./functions/_lib/mcp.js";
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), {
@@ -17,6 +18,8 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
+
+    if (path === "/mcp") return handleMcpRequest(request, env, ctx);
 
     if (request.method !== "GET" && path.startsWith("/api/")) {
       return json({ error: "method not allowed" }, 405);
