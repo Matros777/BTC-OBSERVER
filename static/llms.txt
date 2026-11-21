@@ -9,6 +9,7 @@
 - Technical indicators: EMA 20/50/200, RSI 14, MACD, Bollinger Bands, ATR, Stochastic, ADX/DI, OBV, VWAP, CCI, Williams %R, MFI, ROC, Ichimoku, Fibonacci, Pivot Points
 - 24-hour probabilistic GBM forecast with p10/p90 range
 - Long/Short composite signal combining technicals and ETF flows
+- Forecast Scoreboard: daily self-audit of the 24h forecast (direction hit-rate, P10-P90 corridor calibration, median error)
 - One-page cosmic dark UI with a circular long/short gauge
 
 ## Data sources
@@ -23,6 +24,7 @@
 - GET /api/etf
 - GET /api/klines?interval=1h&limit=500
 - GET /api/ticker
+- GET /api/forecast-accuracy (self-audit of past daily forecasts, D1-backed)
 - GET /healthz (uptime and upstream status)
 - POST /mcp (Model Context Protocol, streamable HTTP; tools: btc_report, btc_price, btc_etf, btc_klines, btc_forecast; rate limit 20 req/min per IP)
 

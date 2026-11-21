@@ -107,3 +107,21 @@ export async function getTicker() {
   }
   throw lastError || new Error("ticker unavailable");
 }
+
+// Close of the 1-minute candle ending exactly at tsMs — the last traded price
+// before tsMs. Used by the forecast scoreboard to verify yesterday's snapshot.
+export async function getCloseAt(tsMs) {
+  const start = tsMs - 60_000;
+  let lastError = null;
+  for (const provider of PROVIDERS) {
+    try {
+      const url = `${provider.base}/api/v3/klines?symbol=BTCUSDT&interval=1m&startTime=${start}&limit=1`;
+      const raw = await cachedJson(url);
+      if (!Array.isArray(raw) || raw.length === 0) throw new Error("empty klines");
+      return Number(raw[0][4]);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError || new Error("price at timestamp unavailable");
+}

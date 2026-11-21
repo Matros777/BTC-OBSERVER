@@ -190,3 +190,28 @@ curl -s https://btc-observer.ivanbenks7-e96.workers.dev/api/etf \
 
 Прогноз вероятностный, не является финансовой рекомендацией.
 Публичный API Binance может быть недоступен в некоторых регионах/VPN.
+
+## Forecast Scoreboard (daily self-audit)
+
+The dashboard audits its own 24h Monte Carlo forecast — no hindsight, no edits:
+
+- Cron trigger `0 9 * * *` (UTC): snapshots the current forecast (median, P10/P90, probUp) into D1 (`forecast_snapshots`) and verifies yesterday's snapshot against the actual 1m close at the horizon.
+- Lazy bootstrap: if today's snapshot is missing, the job also runs from the first `/api/market` request of the day.
+- Metrics: direction hit-rate, P10–P90 corridor calibration (~80% target), median error (MAE), current streak.
+- API: `GET /api/forecast-accuracy` — UI: FORECAST SCOREBOARD panel at the bottom of the dashboard.
+
+First remote setup:
+
+```sh
+npx wrangler d1 create btc-observer-forecast   # paste the returned database_id into wrangler.toml
+npx wrangler d1 execute btc-observer-forecast --remote --file migrations/0001_forecast_snapshots.sql
+npx wrangler deploy
+```
+
+Local development uses the simulated D1 database automatically:
+
+```sh
+npx wrangler d1 execute DB --local --file migrations/0001_forecast_snapshots.sql
+npx wrangler dev          # dashboard at http://127.0.0.1:8787
+curl 'http://127.0.0.1:8787/__scheduled?cron=0+9+*+*+*'   # trigger the job manually
+```

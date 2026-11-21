@@ -825,3 +825,95 @@ canvas { display: block; width: 100%; height: 100%; }
   letter-spacing: 0.12em;
 }
 .footer-links a:hover { color: var(--text); }
+
+/* ============================================================
+   FORECAST SCOREBOARD
+   ============================================================ */
+
+.scoreboard-panel { margin-top: 18px; }
+.fs-body { padding: 14px 18px 18px; }
+
+.fs-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.fs-card {
+  background: var(--panel-solid);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 84px;
+}
+
+.fs-label { color: var(--dim); font-size: 9px; letter-spacing: 0.14em; }
+.fs-value { color: var(--text); font-size: 22px; font-weight: 700; line-height: 1.1; }
+.fs-value.fs-pos { color: var(--neon); }
+.fs-value.fs-neg { color: var(--pink); }
+.fs-sub { color: var(--dim); font-size: 9px; letter-spacing: 0.06em; }
+
+.fs-last {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--panel-solid);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.fs-last b { color: var(--text); font-weight: 600; }
+
+.fs-table-wrap {
+  margin-top: 12px;
+  overflow-x: auto;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+}
+
+.fs-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.fs-table th {
+  text-align: left;
+  color: var(--dim);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  font-size: 9px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--panel-solid);
+  white-space: nowrap;
+}
+.fs-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.fs-table tr:last-child td { border-bottom: none; }
+.fs-table td:first-child { color: var(--text); }
+
+.fs-pos { color: var(--neon); }
+.fs-neg { color: var(--pink); }
+.fs-pending { color: var(--yellow); }
+.fs-dim { color: var(--dim); }
+.fs-pending-row td { opacity: 0.55; }
+.fs-empty { text-align: center; color: var(--dim); padding: 18px 12px; white-space: normal; }
+
+.fs-note { margin: 12px 0 0; color: var(--dim); font-size: 10px; line-height: 1.6; }
+
+@media (max-width: 1100px) {
+  .fs-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .fs-body { padding: 12px 12px 14px; }
+  .fs-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .fs-card { padding: 10px 12px; min-height: 76px; }
+  .fs-value { font-size: 18px; }
+  .fs-last { font-size: 10px; }
+  .fs-table th, .fs-table td { padding: 7px 9px; }
+}

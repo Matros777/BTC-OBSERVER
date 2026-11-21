@@ -5,3 +5,12 @@ compatibility_date = "2026-11-17"
 [assets]
 directory = "./static"
 binding = "ASSETS"
+
+[triggers]
+crons = ["0 9 * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "btc-observer-forecast"
+# created 2026-11-21 via `wrangler d1 create btc-observer-forecast` (region EEUR).
+database_id = "b663628d-d0cb-4043-adcd-ff69ac72a94c"

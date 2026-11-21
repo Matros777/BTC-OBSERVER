@@ -324,6 +324,56 @@
         <div id="swings" class="levels"></div>
       </div>
     </section>
+
+    <section class="panel scoreboard-panel">
+      <div class="panel-head">
+        <h2 class="panel-title">FORECAST SCOREBOARD</h2>
+        <span class="panel-tag" id="fsMeta">MODEL VS REALITY · DAILY 09:00 UTC</span>
+      </div>
+      <div class="fs-body">
+        <div class="fs-cards">
+          <div class="fs-card">
+            <span class="fs-label">DIRECTION HIT-RATE</span>
+            <b class="fs-value" id="fsHit">--</b>
+            <span class="fs-sub" id="fsHitSub">n = 0 verified days</span>
+          </div>
+          <div class="fs-card">
+            <span class="fs-label">CORRIDOR HIT-RATE</span>
+            <b class="fs-value" id="fsCal">--</b>
+            <span class="fs-sub">P10&#8211;P90 &#183; target &#8776; 80%</span>
+          </div>
+          <div class="fs-card">
+            <span class="fs-label">MEDIAN ERROR</span>
+            <b class="fs-value" id="fsMae">--</b>
+            <span class="fs-sub">MAE &#183; 24h horizon</span>
+          </div>
+          <div class="fs-card">
+            <span class="fs-label">CURRENT STREAK</span>
+            <b class="fs-value" id="fsStreak">--</b>
+            <span class="fs-sub">consecutive direction hits</span>
+          </div>
+        </div>
+        <div id="fsLast" class="fs-last hidden"></div>
+        <div class="fs-table-wrap">
+          <table class="fs-table">
+            <thead>
+              <tr>
+                <th>DAY</th>
+                <th>FORECAST (P10&#8211;P90)</th>
+                <th>FACT</th>
+                <th>DIR</th>
+                <th>RANGE</th>
+                <th>ERR</th>
+              </tr>
+            </thead>
+            <tbody id="fsBody">
+              <tr><td colspan="6" class="fs-empty">Loading scoreboard&#8230;</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="fs-note">Every day at 09:00 UTC the dashboard snapshots its own 24h Monte Carlo forecast (median, P10&#8211;P90 corridor, probability up). The next day's run compares it with the actual BTC close &#8212; no hindsight, no edits. Small samples are noisy: judge the model after ~30 verified days.</p>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">
@@ -343,5 +393,6 @@
   <div id="error" class="error hidden"></div>
   <script src="/vendor/lightweight-charts.standalone.production.js"></script>
   <script type="module" src="/app.js"></script>
+  <script type="module" src="/scoreboard.js"></script>
 </body>
 </html>

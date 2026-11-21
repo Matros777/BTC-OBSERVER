@@ -2,6 +2,8 @@ import { onRequestGet as market } from "./functions/api/market.js";
 import { onRequestGet as etf } from "./functions/api/etf.js";
 import { onRequestGet as klines } from "./functions/api/klines.js";
 import { onRequestGet as ticker } from "./functions/api/ticker.js";
+import { onRequestGet as forecastAccuracy } from "./functions/api/forecast-accuracy.js";
+import { runForecastJob, bootstrapToday } from "./functions/_lib/forecast-job.js";
 import { handleMcpRequest } from "./functions/_lib/mcp.js";
 import { readEtfLastGood } from "./functions/_lib/lastgood.js";
 import { fetchUpstreamDays } from "./functions/_lib/etf-source.js";
@@ -15,9 +17,13 @@ const SECURITY_HEADERS = {
 };
 
 // CSP: inline theme script in index.html, hash computed 2026-11-19:
-//   sed -n '/<script>/,/<\/script>/p' static/index.html | sed '1d;$d' | openssl dgst -sha256 -binary | openssl base64
+//   python3 -c "import pathlib,hashlib,base64; h=pathlib.Path('static/index.html').read_text();
+//     s=h.split('<script>',1)[1].split('</script>',1)[0];
+//     print(base64.b64encode(hashlib.sha256(s.encode()).digest()).decode())"
+//   (the browser hashes the raw element text INCLUDING the leading newline after <script>;
+//    the old sed pipeline dropped it and produced a hash the browser never matches)
 // Re-run this when the inline script changes. JSON-LD blocks are non-scriptable and unrestricted.
-const CSP_HASH = "sha256-qXQVcdoONNpVsRmJaJ77sR9hVKEBdwAec0xkyXw+7sw=";
+const CSP_HASH = "sha256-vtJgGBTE5WiExEKYQ31ljw8T9R8bMg2oiYek9TwNVoc=";
 
 const CSP =
   `default-src 'self'; ` +
@@ -92,6 +98,11 @@ async function healthz(request, env) {
 }
 
 export default {
+  // Daily forecast self-audit: snapshot at 09:00 UTC, verify the day before.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runForecastJob(env));
+  },
+
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
@@ -103,10 +114,15 @@ export default {
       return json({ error: "method not allowed" }, 405);
     }
 
-    if (path === "/api/market") return market({ request, env, ctx });
+    if (path === "/api/market") {
+      // Lazy bootstrap: if today's snapshot is missing, run the job in the background.
+      ctx.waitUntil(bootstrapToday(env).catch(() => {}));
+      return market({ request, env, ctx });
+    }
     if (path === "/api/etf") return etf({ request, env, ctx });
     if (path === "/api/klines") return klines({ request, env, ctx });
     if (path === "/api/ticker") return ticker({ request, env, ctx });
+    if (path === "/api/forecast-accuracy") return forecastAccuracy({ request, env, ctx });
     if (path.startsWith("/api/")) return json({ error: "not found" }, 404);
 
     // Static assets: re-emit with security + CSP headers (ASSETS binding does not set them)
