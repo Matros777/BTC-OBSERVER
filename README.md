@@ -215,3 +215,21 @@ npx wrangler d1 execute DB --local --file migrations/0001_forecast_snapshots.sql
 npx wrangler dev          # dashboard at http://127.0.0.1:8787
 curl 'http://127.0.0.1:8787/__scheduled?cron=0+9+*+*+*'   # trigger the job manually
 ```
+
+### Historical backfill (walk-forward replay)
+
+`scripts/backfill_forecast.mjs` rebuilds what the model *would have said* on past days:
+for each day D it feeds the model only the 500 hourly candles that existed before
+D 09:00 UTC, runs the production `analysis.js`, then verifies against the actual
+close at D+24h. Rows are stored with `source='replay'` and marked `R` in the UI —
+live snapshots stay separate. Nondeterministic Monte Carlo sampling means replay
+numbers are a faithful redraw of the same distribution, not the exact live values.
+
+```sh
+node scripts/backfill_forecast.mjs 2026-10-22 2026-10-23 ... > /tmp/backfill.sql
+npx wrangler d1 execute btc-observer-forecast --remote --config wrangler.toml --file /tmp/backfill.sql -y
+```
+
+Provider note: MEXC ignores `startTime`/`endTime` and silently returns the latest
+candles; both the backfill script and the production `getCloseAt` validate that the
+provider honored the requested time window and fall through to the next provider.

@@ -68,14 +68,15 @@ export async function scoreboardData(db) {
            COALESCE(SUM(verified), 0) AS verified,
            AVG(CASE WHEN verified = 1 THEN hit_dir END) AS hit_rate,
            AVG(CASE WHEN verified = 1 THEN in_range END) AS in_range_rate,
-           AVG(CASE WHEN verified = 1 THEN mae_pct END) AS mae_avg
+           AVG(CASE WHEN verified = 1 THEN mae_pct END) AS mae_avg,
+           COALESCE(SUM(CASE WHEN verified = 1 AND source = 'replay' THEN 1 ELSE 0 END), 0) AS verified_replay
          FROM forecast_snapshots`
       )
       .first(),
     db
       .prepare(
         `SELECT day, ts, price_now, median, p10, p90, prob_up, confidence,
-                verified, fact_price, hit_dir, in_range, mae_pct
+                verified, fact_price, hit_dir, in_range, mae_pct, source
          FROM forecast_snapshots
          ORDER BY ts DESC
          LIMIT 60`
@@ -103,6 +104,7 @@ export async function scoreboardData(db) {
       hit_rate: agg && agg.hit_rate != null ? agg.hit_rate : null,
       in_range_rate: agg && agg.in_range_rate != null ? agg.in_range_rate : null,
       mae_avg: agg && agg.mae_avg != null ? agg.mae_avg : null,
+      replay: agg ? agg.verified_replay : 0,
       streak,
     },
     last,

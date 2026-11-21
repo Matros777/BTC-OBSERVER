@@ -118,6 +118,9 @@ export async function getCloseAt(tsMs) {
       const url = `${provider.base}/api/v3/klines?symbol=BTCUSDT&interval=1m&startTime=${start}&limit=1`;
       const raw = await cachedJson(url);
       if (!Array.isArray(raw) || raw.length === 0) throw new Error("empty klines");
+      // The provider must honor startTime; MEXC silently ignores it and would
+      // return the newest candle instead of the one at the requested minute.
+      if (Number(raw[0][0]) !== start) throw new Error("startTime not honored");
       return Number(raw[0][4]);
     } catch (err) {
       lastError = err;

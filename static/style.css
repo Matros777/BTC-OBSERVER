@@ -896,6 +896,19 @@ canvas { display: block; width: 100%; height: 100%; }
 .fs-table tr:last-child td { border-bottom: none; }
 .fs-table td:first-child { color: var(--text); }
 
+.fs-r {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 0 4px;
+  border: 1px solid rgba(178, 107, 255, 0.4);
+  border-radius: 4px;
+  color: var(--purple);
+  font-size: 8px;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  vertical-align: 1px;
+}
+
 .fs-pos { color: var(--neon); }
 .fs-neg { color: var(--pink); }
 .fs-pending { color: var(--yellow); }

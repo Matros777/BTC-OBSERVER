@@ -33,8 +33,9 @@ function renderLast(last) {
   const dir = last.prob_up >= 0.5 ? "UP" : "DOWN";
   const dirMark = last.hit_dir === 1 ? "&#10003;" : "&#10007;";
   const rangeMark = last.in_range === 1 ? "inside &#10003;" : "outside &#10007;";
+  const replayTag = last.source === "replay" ? ' <i class="fs-r" title="walk-forward replay">R</i>' : "";
   el.innerHTML =
-    `LAST VERIFIED &#8212; <b>${esc(last.day)}</b>: said <b>${dir}</b> ${pct(last.prob_up)} from ${usd(last.price_now)}, ` +
+    `LAST VERIFIED &#8212; <b>${esc(last.day)}</b>${replayTag}: said <b>${dir}</b> ${pct(last.prob_up)} from ${usd(last.price_now)}, ` +
     `median ${usd(last.median)} (P10 ${usd(last.p10)} &#8211; P90 ${usd(last.p90)}) &#8594; ` +
     `fact ${usd(last.fact_price)} &#183; direction ${dirMark} &#183; corridor ${rangeMark} &#183; err ${(last.mae_pct ?? 0).toFixed(2)}%`;
 }
@@ -59,9 +60,10 @@ function renderTable(history) {
           ? '<span class="fs-neg">outside</span>'
           : "--";
     const err = r.mae_pct == null ? "--" : r.mae_pct.toFixed(2) + "%";
+    const dayLabel = r.source === "replay" ? `${esc(r.day)} <i class="fs-r" title="walk-forward replay">R</i>` : esc(r.day);
     return (
       `<tr class="${pending ? "fs-pending-row" : ""}">` +
-      `<td>${esc(r.day)}</td><td>${forecast}</td><td>${fact}</td><td>${dir}</td><td>${range}</td><td>${err}</td></tr>`
+      `<td>${dayLabel}</td><td>${forecast}</td><td>${fact}</td><td>${dir}</td><td>${range}</td><td>${err}</td></tr>`
     );
   });
   $("fsBody").innerHTML =
@@ -79,7 +81,9 @@ function render(data) {
   const verified = s.verified || 0;
   const total = s.total || 0;
 
-  $("fsMeta").textContent = `${verified}/${total} DAYS VERIFIED · DAILY 09:00 UTC`;
+  const replay = s.replay || 0;
+  $("fsMeta").textContent =
+    `${verified}/${total} DAYS VERIFIED · DAILY 09:00 UTC` + (replay ? ` · ${replay} REPLAY` : "");
 
   if (total === 0) {
     setCard("fsHit", "--", "");
