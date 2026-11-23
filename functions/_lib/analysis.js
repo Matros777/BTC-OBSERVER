@@ -15,6 +15,30 @@ const pstdev = (arr) => {
   return Math.sqrt(arr.reduce((s, v) => s + (v - mean) ** 2, 0) / arr.length);
 };
 
+// Linear-interpolated quantile on an ascending sorted array. Taking a raw
+// floor index (as before) biases P10/P90 on small sample sizes.
+const quantileSorted = (sorted, p) => {
+  if (!sorted.length) return null;
+  const x = p * (sorted.length - 1);
+  const lo = Math.floor(x);
+  const hi = Math.ceil(x);
+  return lo === hi ? sorted[lo] : sorted[lo] + (sorted[hi] - sorted[lo]) * (x - lo);
+};
+
+// Small deterministic PRNG so a day's forecast is reproducible: the cron
+// snapshot, the dashboard and the replay backfill all draw the same paths.
+const mulberry32 = (a) => () => {
+  a |= 0;
+  a = (a + 0x6d2b79f5) | 0;
+  let t = Math.imul(a ^ (a >>> 15), 1 | a);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+
+// Stable per-UTC-day seed (e.g. 20261123).
+export const daySeed = (ms = Date.now()) =>
+  Number(new Date(ms).toISOString().slice(0, 10).replace(/-/g, ""));
+
 export function sma(values, period) {
   const out = Array(values.length).fill(null);
   if (period <= 0 || values.length < period) return out;
@@ -327,16 +351,17 @@ export function swingLevels(highs, lows, lookback = 200, wing = 3) {
   return { highs: hs.slice(-5), lows: ls.slice(-5) };
 }
 
-const gauss = () => {
+const gauss = (rand) => {
   let u = 0;
   let v = 0;
-  while (u === 0) u = Math.random();
-  while (v === 0) v = Math.random();
+  while (u === 0) u = rand();
+  while (v === 0) v = rand();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 };
 
-export function analyze(klines, ticker) {
+export function analyze(klines, ticker, opts = {}) {
   if (!klines || !klines.length) throw new Error("no klines");
+  const rand = typeof opts.seed === "number" ? mulberry32(opts.seed) : Math.random;
   const closes = klines.map((k) => k.c);
   const highs = klines.map((k) => k.h);
   const lows = klines.map((k) => k.l);
@@ -601,35 +626,40 @@ export function analyze(klines, ticker) {
   for (let i = 1; i < closes.length; i++) {
     if (closes[i - 1] > 0 && closes[i] > 0) returns.push(Math.log(closes[i] / closes[i - 1]));
   }
-  const recent = returns.slice(-72);
-  const volWindow = returns.slice(-168);
-  let mu = recent.length ? recent.reduce((a, b) => a + b, 0) / recent.length : 0;
-  let sigma = volWindow.length > 1 ? pstdev(volWindow) : 0.01;
-  if (e20 && ema20.length > 6 && ema20[ema20.length - 6]) {
-    const slope = (e20 / ema20[ema20.length - 6] - 1) / 5;
-    if (slope > -0.99) mu = 0.5 * mu + 0.5 * Math.log(1 + slope);
+
+  // 24h horizon: sample drift (72h mean, EMA slope) is noise — its standard
+  // error swamps the signal, and walk-forward showed it hurts the median.
+  // Keep drift at zero; the cone is driven by volatility alone.
+  const mu = 0;
+
+  // EWMA variance (lambda = 0.94) over the last 500 hourly log-returns:
+  // adapts to the current volatility regime instead of a flat 168h window.
+  const volWindow = returns.slice(-500);
+  const initWindow = volWindow.slice(0, 100);
+  let ewmaVar = initWindow.length > 1 ? pstdev(initWindow) ** 2 : 0.01 ** 2;
+  for (let i = Math.max(initWindow.length, 1); i < volWindow.length; i++) {
+    ewmaVar = 0.94 * ewmaVar + 0.06 * volWindow[i] * volWindow[i];
   }
-  sigma = Math.max(sigma, 0.0005);
-  mu = clamp(mu, -sigma * 0.5, sigma * 0.5);
+  const sigma = Math.max(Math.sqrt(ewmaVar), 0.0005);
 
   const steps = 24;
-  const simulations = 1000;
+  const simulations = 5000;
   const finals = [];
   const paths = [];
   for (let n = 0; n < simulations; n++) {
     let p = price;
     const path = [p];
     for (let s = 0; s < steps; s++) {
-      p *= Math.exp(mu + sigma * gauss());
+      p *= Math.exp(mu + sigma * gauss(rand));
       path.push(p);
     }
     finals.push(p);
     paths.push(path);
   }
   finals.sort((a, b) => a - b);
-  const medianFinal = finals[Math.floor(finals.length / 2)];
-  const p10 = finals[Math.floor(0.1 * finals.length)];
-  const p90 = finals[Math.floor(0.9 * finals.length)];
+  const medianFinal = quantileSorted(finals, 0.5);
+  const p10 = quantileSorted(finals, 0.1);
+  const p90 = quantileSorted(finals, 0.9);
   const probUp = finals.filter((f) => f > price).length / finals.length;
   let medianPath = paths[0];
   let bestDiff = Math.abs(medianPath[steps] - medianFinal);
@@ -733,7 +763,7 @@ export function analyze(klines, ticker) {
       rangeHigh: p90,
       confidence: Number(forecastConfidence.toFixed(1)),
       path: medianPath,
-      method: "Monte Carlo GBM · 2000 paths · 1h steps · 24h horizon",
+      method: "Monte Carlo GBM · 5000 paths · 1h steps · 24h horizon · EWMA vol",
       disclaimer: "Probabilistic model, not financial advice.",
     },
     levels: {

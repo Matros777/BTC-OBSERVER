@@ -3,7 +3,7 @@
 // today's snapshot is missing (fresh deploy or a missed cron run).
 
 import { getKlines, getTicker, getCloseAt } from "./binance.js";
-import { analyze } from "./analysis.js";
+import { analyze, daySeed } from "./analysis.js";
 import {
   saveSnapshot,
   hasSnapshotForDay,
@@ -25,7 +25,7 @@ export async function runForecastJob(env) {
   // 1) Snapshot today's forecast — the exact same pipeline the dashboard uses.
   try {
     const [klines, ticker] = await Promise.all([getKlines("1h", 500), getTicker()]);
-    const data = analyze(klines, ticker);
+    const data = analyze(klines, ticker, { seed: daySeed(now) });
     const p = data.prediction;
     const snap = {
       day: utcDay(now),

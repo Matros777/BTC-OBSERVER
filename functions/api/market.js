@@ -1,5 +1,5 @@
 import { getKlines, getTicker } from "../_lib/binance.js";
-import { analyze, analyzeLongTerm } from "../_lib/analysis.js";
+import { analyze, analyzeLongTerm, daySeed } from "../_lib/analysis.js";
 import { etfSummary } from "../_lib/etf.js";
 import { getEtfDataset } from "../_lib/etf-live.js";
 
@@ -20,7 +20,7 @@ export async function onRequestGet({ request, env }) {
       getTicker(),
       getEtfDataset(env, request),
     ]);
-    const data = analyze(klines, ticker);
+    const data = analyze(klines, ticker, { seed: daySeed(Date.now()) });
     data.etf = etfSummary(data.price, 10, etf.dataset);
     data.etf.source = etf.source;
     data.etf.upstreamUpdatedAt = etf.updatedAt;

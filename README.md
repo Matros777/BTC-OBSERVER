@@ -12,7 +12,7 @@
 - **EMA CROSS**: пересечения 20/50, 50/200, 20/200 — вверх = BUY, вниз = SELL (отдельный сигнал + панель + стрелки на графике цены)
 - Все графики (цена, RSI, MACD, объём, EMA CROSS) на TradingView Lightweight Charts с синхронной осью времени и кроссхэйром
 - Дневной 1D-анализ для долгосрочной части индикатора
-- Прогноз на 24 часа: Monte Carlo GBM, 2000 траекторий, 1H шаги
+- Прогноз на 24 часа: Monte Carlo GBM, 5000 траекторий, 1H шаги, волатильность EWMA(0.94), детерминированный сид на сутки
 - Тёмный минималистичный интерфейс с неоновыми графиками
 - Без API-ключей и без внешних зависимостей (Python stdlib + vanilla JS)
 
@@ -198,6 +198,8 @@ The dashboard audits its own 24h Monte Carlo forecast — no hindsight, no edits
 - Cron trigger `0 9 * * *` (UTC): snapshots the current forecast (median, P10/P90, probUp) into D1 (`forecast_snapshots`) and verifies yesterday's snapshot against the actual 1m close at the horizon.
 - Lazy bootstrap: if today's snapshot is missing, the job also runs from the first `/api/market` request of the day.
 - Metrics: direction hit-rate, P10–P90 corridor calibration (~80% target), median error (MAE), current streak.
+- Headline stats are **live-only**; walk-forward replay rows are reported separately (they are not the forecast that was published that day).
+- Monte Carlo is seeded by UTC day, so the cron snapshot, the dashboard and the replay backfill draw the same paths and the numbers stay stable within a day.
 - API: `GET /api/forecast-accuracy` — UI: FORECAST SCOREBOARD panel at the bottom of the dashboard.
 
 First remote setup:
@@ -222,14 +224,21 @@ curl 'http://127.0.0.1:8787/__scheduled?cron=0+9+*+*+*'   # trigger the job manu
 for each day D it feeds the model only the 500 hourly candles that existed before
 D 09:00 UTC, runs the production `analysis.js`, then verifies against the actual
 close at D+24h. Rows are stored with `source='replay'` and marked `R` in the UI —
-live snapshots stay separate. Nondeterministic Monte Carlo sampling means replay
-numbers are a faithful redraw of the same distribution, not the exact live values.
+live snapshots stay separate and only live rows feed the headline hit-rate/calibration.
+Monte Carlo is seeded from the day, so a replay run is reproducible; it still differs
+from the original live row if the provider served slightly different candles.
+
+Model note (2026-11-23): drift is set to zero for the 24h horizon (the sample drift is
+noise at that scale and walk-forward showed it worsened the median), volatility is an
+EWMA(λ=0.94) over the last 500 hourly log-returns, and P10/P50/P90 are linearly
+interpolated across 5000 paths.
 
 ```sh
 node scripts/backfill_forecast.mjs 2026-10-22 2026-10-23 ... > /tmp/backfill.sql
 npx wrangler d1 execute btc-observer-forecast --remote --config wrangler.toml --file /tmp/backfill.sql -y
 ```
 
-Provider note: MEXC ignores `startTime`/`endTime` and silently returns the latest
-candles; both the backfill script and the production `getCloseAt` validate that the
-provider honored the requested time window and fall through to the next provider.
+Provider note: MEXC ignores `startTime` when it is sent alone and returns the latest
+candles. A request with **both** `startTime` and `endTime` is honored; `getCloseAt`
+sends both, validates that the requested minute came back, and falls through to the
+next provider otherwise.

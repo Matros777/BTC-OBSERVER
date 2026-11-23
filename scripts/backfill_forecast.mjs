@@ -131,7 +131,7 @@ for (const day of days) {
 
   const klines = await getKlinesUntil("1h", 500, snapMs);
   const price = klines[klines.length - 1].c;
-  const data = analyze(klines, makeTicker(klines, price));
+  const data = analyze(klines, makeTicker(klines, price), { seed: Number(day.replace(/-/g, "")) });
   const p = data.prediction;
 
   const factTs = snapMs + HORIZON;

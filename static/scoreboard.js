@@ -35,7 +35,7 @@ function renderLast(last) {
   const rangeMark = last.in_range === 1 ? "inside &#10003;" : "outside &#10007;";
   const replayTag = last.source === "replay" ? ' <i class="fs-r" title="walk-forward replay">R</i>' : "";
   el.innerHTML =
-    `LAST VERIFIED &#8212; <b>${esc(last.day)}</b>${replayTag}: said <b>${dir}</b> ${pct(last.prob_up)} from ${usd(last.price_now)}, ` +
+    `LAST ${last.source === "replay" ? "REPLAY" : "LIVE"} VERIFIED &#8212; <b>${esc(last.day)}</b>${replayTag}: said <b>${dir}</b> ${pct(last.prob_up)} from ${usd(last.price_now)}, ` +
     `median ${usd(last.median)} (P10 ${usd(last.p10)} &#8211; P90 ${usd(last.p90)}) &#8594; ` +
     `fact ${usd(last.fact_price)} &#183; direction ${dirMark} &#183; corridor ${rangeMark} &#183; err ${(last.mae_pct ?? 0).toFixed(2)}%`;
 }
@@ -81,13 +81,18 @@ function render(data) {
   const verified = s.verified || 0;
   const total = s.total || 0;
 
-  const replay = s.replay || 0;
-  $("fsMeta").textContent =
-    `${verified}/${total} DAYS VERIFIED · DAILY 09:00 UTC` + (replay ? ` · ${replay} REPLAY` : "");
+  const replay = data.replay || {};
+  const replayVerified = replay.verified || 0;
+  const replayNote = replayVerified
+    ? ` · REPLAY ${replayVerified}D: CAL ${pct(replay.in_range_rate)} · MAE ${
+        replay.mae_avg == null ? "--" : replay.mae_avg.toFixed(2) + "%"
+      }`
+    : "";
+  $("fsMeta").textContent = `${verified}/${total} LIVE DAYS VERIFIED${replayNote} · DAILY 09:00 UTC`;
 
   if (total === 0) {
     setCard("fsHit", "--", "");
-    $("fsHitSub").textContent = "first snapshot at the next 09:00 UTC run";
+    $("fsHitSub").textContent = "first live snapshot at the next 09:00 UTC run";
     setCard("fsCal", "--", "");
     setCard("fsMae", "--", "");
     setCard("fsStreak", "--", "");
@@ -98,7 +103,7 @@ function render(data) {
 
   const hitCls = s.hit_rate == null ? "" : s.hit_rate >= 0.5 ? "fs-pos" : "fs-neg";
   setCard("fsHit", pct(s.hit_rate), hitCls);
-  $("fsHitSub").textContent = `n = ${verified} verified day${verified === 1 ? "" : "s"}`;
+  $("fsHitSub").textContent = `n = ${verified} live day${verified === 1 ? "" : "s"}`;
 
   const calCls =
     s.in_range_rate == null ? "" : s.in_range_rate >= 0.75 ? "fs-pos" : s.in_range_rate < 0.6 ? "fs-neg" : "";

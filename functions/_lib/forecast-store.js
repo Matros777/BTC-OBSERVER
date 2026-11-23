@@ -59,20 +59,27 @@ export async function verifySnapshot(db, row, factPrice, factTs) {
   return { hitDir, inRange, maePct };
 }
 
+const AGG_SQL = `SELECT
+         COUNT(*) AS total,
+         COALESCE(SUM(verified), 0) AS verified,
+         AVG(CASE WHEN verified = 1 THEN hit_dir END) AS hit_rate,
+         AVG(CASE WHEN verified = 1 THEN in_range END) AS in_range_rate,
+         AVG(CASE WHEN verified = 1 THEN mae_pct END) AS mae_avg
+       FROM forecast_snapshots
+       WHERE source = ?1`;
+
+const shapeAgg = (a) => ({
+  total: a ? a.total : 0,
+  verified: a ? a.verified : 0,
+  hit_rate: a && a.hit_rate != null ? a.hit_rate : null,
+  in_range_rate: a && a.in_range_rate != null ? a.in_range_rate : null,
+  mae_avg: a && a.mae_avg != null ? a.mae_avg : null,
+});
+
 export async function scoreboardData(db) {
-  const [agg, historyRes] = await Promise.all([
-    db
-      .prepare(
-        `SELECT
-           COUNT(*) AS total,
-           COALESCE(SUM(verified), 0) AS verified,
-           AVG(CASE WHEN verified = 1 THEN hit_dir END) AS hit_rate,
-           AVG(CASE WHEN verified = 1 THEN in_range END) AS in_range_rate,
-           AVG(CASE WHEN verified = 1 THEN mae_pct END) AS mae_avg,
-           COALESCE(SUM(CASE WHEN verified = 1 AND source = 'replay' THEN 1 ELSE 0 END), 0) AS verified_replay
-         FROM forecast_snapshots`
-      )
-      .first(),
+  const [liveAgg, replayAgg, historyRes] = await Promise.all([
+    db.prepare(AGG_SQL).bind("live").first(),
+    db.prepare(AGG_SQL).bind("replay").first(),
     db
       .prepare(
         `SELECT day, ts, price_now, median, p10, p90, prob_up, confidence,
@@ -86,27 +93,32 @@ export async function scoreboardData(db) {
 
   const rows = historyRes.results || [];
 
-  // Streak: consecutive verified direction hits starting from the newest snapshot.
+  // Streak: consecutive verified LIVE direction hits, newest first. Replay rows
+  // are redrawn forecasts and must not feed the live streak.
   let streak = 0;
   for (const r of rows) {
-    if (!r.verified) continue;
+    if (r.source !== "live" || !r.verified) continue;
     if (r.hit_dir === 1) streak += 1;
     else break;
   }
 
-  const last = rows.find((r) => r.verified) || null;
+  const last =
+    rows.find((r) => r.verified && r.source === "live") ||
+    rows.find((r) => r.verified) ||
+    null;
+
+  const live = shapeAgg(liveAgg);
+  const replay = shapeAgg(replayAgg);
 
   return {
+    // Headline numbers are live-only: replay rows are a walk-forward redraw,
+    // not the forecast that was actually published that day.
     summary: {
-      total: agg ? agg.total : 0,
-      verified: agg ? agg.verified : 0,
-      pending: agg ? agg.total - agg.verified : 0,
-      hit_rate: agg && agg.hit_rate != null ? agg.hit_rate : null,
-      in_range_rate: agg && agg.in_range_rate != null ? agg.in_range_rate : null,
-      mae_avg: agg && agg.mae_avg != null ? agg.mae_avg : null,
-      replay: agg ? agg.verified_replay : 0,
+      ...live,
+      pending: live.total - live.verified,
       streak,
     },
+    replay,
     last,
     history: rows.slice(0, 14),
     generated_at: Date.now(),

@@ -1,5 +1,5 @@
 /* BTC // OBSERVER — frontend */
-import { analyze, analyzeLongTerm } from "./analysis.js";
+import { analyze, analyzeLongTerm, daySeed } from "./analysis.js";
 import { etfSummary, loadEtfDataset } from "./etf.js";
 
 (() => {
@@ -818,7 +818,7 @@ import { etfSummary, loadEtfDataset } from "./etf.js";
         fetchJson("/api/etf").catch(() => null),
       ]);
       if (!k1h.klines || !k1h.klines.length) throw new Error(k1h.error || "no klines");
-      const data = analyze(k1h.klines, ticker);
+      const data = analyze(k1h.klines, ticker, { seed: daySeed(Date.now()) });
       // The Worker resolves flows from cryptoetf.today; the local server and
       // the offline path still fall back to the embedded seed + live file.
       if (etfApi && Array.isArray(etfApi.daily) && etfApi.daily.length) data.etf = etfApi;
