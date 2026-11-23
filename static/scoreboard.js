@@ -40,7 +40,11 @@ function renderLast(last) {
 }
 
 function renderTable(history) {
-  const rows = (history || []).map((r) => {
+  const list = history || [];
+  const wrap = document.querySelector(".fs-table-wrap");
+  // The table gets its own thin scrollbar only once it exceeds 30 rows.
+  if (wrap) wrap.classList.toggle("fs-scroll", list.length > 30);
+  const rows = list.map((r) => {
     const pending = !r.verified;
     const forecast = `${usd(r.median)} <span class="fs-dim">&#183; ${usd(r.p10)}&#8211;${usd(r.p90)}</span>`;
     const fact = pending ? "--" : usd(r.fact_price);

@@ -16,6 +16,8 @@
   --purple: #b26bff;
   --yellow: #ffe066;
   --orange: #ff9f43;
+  --scroll-thumb: #242433;
+  --scroll-thumb-hover: #35354a;
   --radius: 14px;
   --mono: "SFMono-Regular", "JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, Menlo, Consolas, monospace;
 }
@@ -614,6 +616,8 @@ canvas { display: block; width: 100%; height: 100%; }
   --purple: #6b37cf;
   --yellow: #9a7400;
   --orange: #bd6400;
+  --scroll-thumb: #c6cedd;
+  --scroll-thumb-hover: #aab5c8;
 }
 
 :root[data-theme="light"] body {
@@ -873,6 +877,39 @@ canvas { display: block; width: 100%; height: 100%; }
   overflow-x: auto;
   border: 1px solid var(--line-soft);
   border-radius: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+/* With 31+ rows the table gets its own thin dark scrollbar instead of
+   stretching the page. 900px ≈ 30 rows + header on desktop; on phones the
+   cap follows the viewport so there is no nested page scroll. */
+.fs-table-wrap.fs-scroll {
+  max-height: 900px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.fs-table-wrap.fs-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.fs-table-wrap::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.fs-table-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+.fs-table-wrap::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 999px;
+}
+.fs-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover);
+}
+.fs-table-wrap::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .fs-table { width: 100%; border-collapse: collapse; font-size: 10px; }
@@ -929,4 +966,5 @@ canvas { display: block; width: 100%; height: 100%; }
   .fs-value { font-size: 18px; }
   .fs-last { font-size: 10px; }
   .fs-table th, .fs-table td { padding: 7px 9px; }
+  .fs-table-wrap.fs-scroll { max-height: 70vh; }
 }

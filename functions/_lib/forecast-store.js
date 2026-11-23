@@ -86,7 +86,7 @@ export async function scoreboardData(db) {
          FROM forecast_snapshots
          WHERE source = 'live'
          ORDER BY ts DESC
-         LIMIT 60`
+         LIMIT 400`
       )
       .all(),
   ]);
@@ -113,7 +113,7 @@ export async function scoreboardData(db) {
       streak,
     },
     last,
-    history: rows.slice(0, 14),
+    history: rows.slice(0, 90),
     generated_at: Date.now(),
   };
 }
