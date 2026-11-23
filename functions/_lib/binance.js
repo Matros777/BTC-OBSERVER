@@ -111,17 +111,23 @@ export async function getTicker() {
 // Close of the 1-minute candle ending exactly at tsMs — the last traded price
 // before tsMs. Used by the forecast scoreboard to verify yesterday's snapshot.
 export async function getCloseAt(tsMs) {
-  const start = tsMs - 60_000;
+  // Align to the minute first: live snapshots carry seconds/millis (e.g.
+  // 09:00:21.111), and providers only return candles on minute boundaries.
+  // The candle we want is the last one that closed before tsMs.
+  const start = Math.floor(tsMs / 60_000) * 60_000 - 60_000;
+  const end = start + 60_000;
   let lastError = null;
   for (const provider of PROVIDERS) {
     try {
-      const url = `${provider.base}/api/v3/klines?symbol=BTCUSDT&interval=1m&startTime=${start}&limit=1`;
+      // Send endTime too: MEXC ignores startTime on its own and returns the
+      // newest candle; with both bounds it honors the requested range.
+      const url = `${provider.base}/api/v3/klines?symbol=BTCUSDT&interval=1m&startTime=${start}&endTime=${end}&limit=2`;
       const raw = await cachedJson(url);
       if (!Array.isArray(raw) || raw.length === 0) throw new Error("empty klines");
-      // The provider must honor startTime; MEXC silently ignores it and would
-      // return the newest candle instead of the one at the requested minute.
-      if (Number(raw[0][0]) !== start) throw new Error("startTime not honored");
-      return Number(raw[0][4]);
+      // The provider must return the requested minute (not the latest candle).
+      const hit = raw.find((k) => Number(k[0]) === start);
+      if (!hit) throw new Error("requested minute not returned");
+      return Number(hit[4]);
     } catch (err) {
       lastError = err;
     }

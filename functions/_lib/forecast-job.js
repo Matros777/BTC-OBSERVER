@@ -44,8 +44,21 @@ export async function runForecastJob(env) {
   }
 
   // 2) Verify every snapshot whose 24h horizon has passed.
+  const v = await verifyDue(env, now);
+  out.verified = v.verified;
+  out.errors.push(...v.errors);
+
+  return out;
+}
+
+// Verify every snapshot whose 24h horizon has passed. Kept separate from the
+// snapshot step so a page-load bootstrap can catch up after a missed cron run
+// without rewriting today's snapshot timestamp.
+export async function verifyDue(env, nowMs = Date.now()) {
+  const out = { verified: [], errors: [] };
+  if (!env.DB) return out;
   try {
-    const due = await pendingSnapshots(env.DB, now);
+    const due = await pendingSnapshots(env.DB, nowMs);
     for (const row of due) {
       try {
         const factTs = row.ts + HORIZON_MS;
@@ -60,16 +73,21 @@ export async function runForecastJob(env) {
   } catch (e) {
     out.errors.push(`pending: ${e && e.message ? e.message : e}`);
   }
-
   return out;
 }
 
-// Lazy bootstrap: one indexed SELECT per /api/market call; only runs the full
-// job when today's row is missing. Race-safe: the day-level unique index plus
-// the verified-guarded upsert make concurrent runs converge on one row.
+// Lazy bootstrap: one indexed SELECT per /api/market call. Runs the full job
+// when today's row is missing (fresh deploy or a missed cron snapshot) and
+// still retries overdue verifications without touching today's row.
+// Race-safe: the day-level unique index plus the verified-guarded upsert make
+// concurrent runs converge on one row.
 export async function bootstrapToday(env) {
   if (!env.DB) return;
-  const today = utcDay(Date.now());
-  if (await hasSnapshotForDay(env.DB, today)) return;
-  await runForecastJob(env);
+  const now = Date.now();
+  const today = utcDay(now);
+  if (!(await hasSnapshotForDay(env.DB, today))) {
+    await runForecastJob(env);
+    return;
+  }
+  await verifyDue(env, now);
 }
