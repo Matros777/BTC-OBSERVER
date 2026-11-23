@@ -198,7 +198,7 @@ The dashboard audits its own 24h Monte Carlo forecast — no hindsight, no edits
 - Cron trigger `0 9 * * *` (UTC): snapshots the current forecast (median, P10/P90, probUp) into D1 (`forecast_snapshots`) and verifies yesterday's snapshot against the actual 1m close at the horizon.
 - Lazy bootstrap: if today's snapshot is missing, the job also runs from the first `/api/market` request of the day.
 - Metrics: direction hit-rate, P10–P90 corridor calibration (~80% target), median error (MAE), current streak.
-- Headline stats are **live-only**; walk-forward replay rows are reported separately (they are not the forecast that was published that day).
+- Only real daily snapshots are shown; walk-forward replay rows stay in D1 for offline analysis and are hidden from the dashboard.
 - Monte Carlo is seeded by UTC day, so the cron snapshot, the dashboard and the replay backfill draw the same paths and the numbers stay stable within a day.
 - API: `GET /api/forecast-accuracy` — UI: FORECAST SCOREBOARD panel at the bottom of the dashboard.
 
@@ -223,8 +223,8 @@ curl 'http://127.0.0.1:8787/__scheduled?cron=0+9+*+*+*'   # trigger the job manu
 `scripts/backfill_forecast.mjs` rebuilds what the model *would have said* on past days:
 for each day D it feeds the model only the 500 hourly candles that existed before
 D 09:00 UTC, runs the production `analysis.js`, then verifies against the actual
-close at D+24h. Rows are stored with `source='replay'` and marked `R` in the UI —
-live snapshots stay separate and only live rows feed the headline hit-rate/calibration.
+close at D+24h. Rows are stored with `source='replay'` and are hidden from the dashboard;
+live snapshots are the only rows the scoreboard shows.
 Monte Carlo is seeded from the day, so a replay run is reproducible; it still differs
 from the original live row if the provider served slightly different candles.
 

@@ -66,7 +66,7 @@ const AGG_SQL = `SELECT
          AVG(CASE WHEN verified = 1 THEN in_range END) AS in_range_rate,
          AVG(CASE WHEN verified = 1 THEN mae_pct END) AS mae_avg
        FROM forecast_snapshots
-       WHERE source = ?1`;
+       WHERE source = 'live'`;
 
 const shapeAgg = (a) => ({
   total: a ? a.total : 0,
@@ -77,14 +77,14 @@ const shapeAgg = (a) => ({
 });
 
 export async function scoreboardData(db) {
-  const [liveAgg, replayAgg, historyRes] = await Promise.all([
-    db.prepare(AGG_SQL).bind("live").first(),
-    db.prepare(AGG_SQL).bind("replay").first(),
+  const [liveAgg, historyRes] = await Promise.all([
+    db.prepare(AGG_SQL).first(),
     db
       .prepare(
         `SELECT day, ts, price_now, median, p10, p90, prob_up, confidence,
                 verified, fact_price, hit_dir, in_range, mae_pct, source
          FROM forecast_snapshots
+         WHERE source = 'live'
          ORDER BY ts DESC
          LIMIT 60`
       )
@@ -93,32 +93,25 @@ export async function scoreboardData(db) {
 
   const rows = historyRes.results || [];
 
-  // Streak: consecutive verified LIVE direction hits, newest first. Replay rows
-  // are redrawn forecasts and must not feed the live streak.
+  // Streak: consecutive verified direction hits, newest first.
   let streak = 0;
   for (const r of rows) {
-    if (r.source !== "live" || !r.verified) continue;
+    if (!r.verified) continue;
     if (r.hit_dir === 1) streak += 1;
     else break;
   }
 
-  const last =
-    rows.find((r) => r.verified && r.source === "live") ||
-    rows.find((r) => r.verified) ||
-    null;
-
+  const last = rows.find((r) => r.verified) || null;
   const live = shapeAgg(liveAgg);
-  const replay = shapeAgg(replayAgg);
 
   return {
-    // Headline numbers are live-only: replay rows are a walk-forward redraw,
-    // not the forecast that was actually published that day.
+    // Only real daily snapshots are shown. Walk-forward replay rows stay in D1
+    // for offline analysis but never appear on the dashboard.
     summary: {
       ...live,
       pending: live.total - live.verified,
       streak,
     },
-    replay,
     last,
     history: rows.slice(0, 14),
     generated_at: Date.now(),
